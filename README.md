@@ -1,6 +1,6 @@
 # PLC采集平台
 
-一个基于Python的PLC数据采集平台，支持多种PLC设备的数据采集、存储和管理。
+一个基于Python和Next.js的现代化PLC数据采集平台，支持多种PLC设备的数据采集、存储和管理，提供美观的Web界面。
 
 ## 功能特性
 
@@ -10,14 +10,27 @@
 - **分组管理**: 支持设备分组管理，便于组织和权限控制
 - **用户管理**: 多级用户权限管理，支持管理员和普通用户
 - **RESTful API**: 完整的API接口，便于前端集成
+- **现代化界面**: 基于Next.js和Tailwind CSS的响应式Web界面
+- **实时监控**: 实时数据展示和图表可视化
+- **系统设置**: 灵活的系统配置管理
 
 ### 技术架构
+
+#### 后端技术栈
 - **后端框架**: Robyn (高性能Python Web框架)
 - **时序数据库**: InfluxDB (存储PLC采集数据)
 - **关系数据库**: SQLite (存储用户、设备、分组等元数据)
 - **PLC通信**: HslCommunication (支持多种PLC协议)
 - **认证授权**: JWT Token
 - **日志系统**: Loguru
+
+#### 前端技术栈
+- **前端框架**: Next.js 14 (React框架)
+- **UI组件**: Tailwind CSS + shadcn/ui
+- **状态管理**: Zustand
+- **图表库**: Chart.js / Recharts
+- **图标库**: Lucide React
+- **类型检查**: TypeScript
 
 ## 项目结构
 
@@ -32,13 +45,36 @@ plc_admin/
 ├── requirements.txt       # 依赖包
 ├── .env.example          # 环境变量模板
 ├── README.md             # 项目说明
-└── api/                  # API路由
-    ├── __init__.py
-    ├── auth_routes.py     # 认证相关API
-    ├── group_routes.py    # 分组管理API
-    ├── device_routes.py   # 设备管理API
-    ├── user_routes.py     # 用户管理API
-    └── data_routes.py     # 数据查询API
+├── .gitignore            # Git忽略文件
+├── api/                  # API路由
+│   ├── __init__.py
+│   ├── auth_routes.py     # 认证相关API
+│   ├── group_routes.py    # 分组管理API
+│   ├── device_routes.py   # 设备管理API
+│   ├── user_routes.py     # 用户管理API
+│   ├── data_routes.py     # 数据查询API
+│   ├── dashboard_routes.py # 仪表板API
+│   └── settings_routes.py  # 系统设置API
+└── frontend/             # 前端应用
+    ├── package.json       # Node.js依赖
+    ├── next.config.js     # Next.js配置
+    ├── tailwind.config.ts # Tailwind配置
+    ├── tsconfig.json      # TypeScript配置
+    ├── components.json    # shadcn/ui配置
+    └── src/              # 源代码
+        ├── app/          # Next.js App Router
+        │   ├── dashboard/ # 仪表板页面
+        │   ├── devices/   # 设备管理页面
+        │   ├── groups/    # 分组管理页面
+        │   ├── realtime/  # 实时数据页面
+        │   ├── settings/  # 系统设置页面
+        │   └── users/     # 用户管理页面
+        ├── components/   # React组件
+        │   ├── layout/   # 布局组件
+        │   └── ui/       # UI组件
+        ├── lib/          # 工具库
+        ├── services/     # API服务
+        └── store/        # 状态管理
 ```
 
 ## 快速开始
@@ -47,14 +83,22 @@ plc_admin/
 
 确保已安装以下软件：
 - Python 3.8+
+- Node.js 18+
 - InfluxDB 2.0+
 - .NET Framework (用于HslCommunication)
 
-### 2. 安装依赖
+### 2. 安装后端依赖
 
 ```bash
 cd plc_admin
 pip install -r requirements.txt
+```
+
+### 3. 安装前端依赖
+
+```bash
+cd frontend
+npm install
 ```
 
 ### 3. 配置环境
