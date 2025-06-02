@@ -17,7 +17,7 @@
 ### 技术架构
 
 #### 后端技术栈
-- **后端框架**: Robyn (高性能Python Web框架)
+- **后端框架**: FastAPI (现代高性能Python Web框架)
 - **时序数据库**: InfluxDB (存储PLC采集数据)
 - **关系数据库**: SQLite (存储用户、设备、分组等元数据)
 - **PLC通信**: HslCommunication (支持多种PLC协议)
