@@ -275,18 +275,18 @@ export default function DevicesPage() {
     }
     
     switch (device.status) {
-      case 'connected':
+      case 'online':
         return (
           <Badge variant="default" className="flex items-center gap-1 bg-green-500">
             <CheckCircle className="h-3 w-3" />
-            已连接
+            在线
           </Badge>
         )
-      case 'disconnected':
+      case 'offline':
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
             <XCircle className="h-3 w-3" />
-            已断开
+            离线
           </Badge>
         )
       case 'connecting':
@@ -294,6 +294,13 @@ export default function DevicesPage() {
           <Badge variant="outline" className="flex items-center gap-1">
             <Loader className="h-3 w-3 animate-spin" />
             连接中
+          </Badge>
+        )
+      case 'error':
+        return (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            错误
           </Badge>
         )
       default:
@@ -380,7 +387,7 @@ export default function DevicesPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">在线设备</p>
                     <p className="text-2xl font-bold text-green-600">
-                      {devices.filter(d => d.status === 'connected').length}
+                      {devices.filter(d => d.status === 'online').length}
                     </p>
                   </div>
                 </div>
@@ -394,7 +401,7 @@ export default function DevicesPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">离线设备</p>
                     <p className="text-2xl font-bold text-red-600">
-                      {devices.filter(d => d.status === 'disconnected').length}
+                      {devices.filter(d => d.status === 'offline').length}
                     </p>
                   </div>
                 </div>
@@ -437,8 +444,8 @@ export default function DevicesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="connected">已连接</SelectItem>
-                  <SelectItem value="disconnected">已断开</SelectItem>
+                  <SelectItem value="online">在线</SelectItem>
+                  <SelectItem value="offline">离线</SelectItem>
                   <SelectItem value="active">已启用</SelectItem>
                   <SelectItem value="inactive">已禁用</SelectItem>
                 </SelectContent>
