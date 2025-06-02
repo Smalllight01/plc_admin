@@ -733,7 +733,7 @@ export default function DevicesPage() {
                     <Label className="text-base font-medium">地址配置</Label>
                   </div>
                   <AddressConfig
-                    addresses={formData.addresses}
+                    value={formData.addresses}
                     onChange={(addresses) => setFormData({ ...formData, addresses })}
                   />
                 </div>

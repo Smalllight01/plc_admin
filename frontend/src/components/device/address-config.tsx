@@ -203,7 +203,12 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
     }
 
     const newAddresses = [...addresses, address]
-    handleChange(newAddresses)
+    // 只更新本地状态，不立即通知外部
+    setAddresses(newAddresses)
+    // 延迟通知外部，避免立即触发表单提交
+    setTimeout(() => {
+      onChange(newAddresses)
+    }, 0)
 
     // 重置表单
     setNewAddress({
@@ -226,7 +231,12 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
    */
   const handleDelete = (id: string) => {
     const newAddresses = addresses.filter(addr => addr.id !== id)
-    handleChange(newAddresses)
+    // 只更新本地状态，不立即通知外部
+    setAddresses(newAddresses)
+    // 延迟通知外部，避免立即触发表单提交
+    setTimeout(() => {
+      onChange(newAddresses)
+    }, 0)
     
     toast({
       title: '删除成功',
@@ -272,7 +282,12 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
     const newAddresses = addresses.map(addr => 
       addr.id === id ? { ...addr, ...processedAddress } : addr
     )
-    handleChange(newAddresses)
+    // 只更新本地状态，不立即通知外部
+    setAddresses(newAddresses)
+    // 延迟通知外部，避免立即触发表单提交
+    setTimeout(() => {
+      onChange(newAddresses)
+    }, 0)
     setEditingId(null)
 
     toast({
@@ -298,7 +313,12 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       name: `${address.name} (副本)`,
     }
     const newAddresses = [...addresses, newAddress]
-    handleChange(newAddresses)
+    // 只更新本地状态，不立即通知外部
+    setAddresses(newAddresses)
+    // 延迟通知外部，避免立即触发表单提交
+    setTimeout(() => {
+      onChange(newAddresses)
+    }, 0)
 
     toast({
       title: '复制成功',
@@ -333,7 +353,12 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
             }))
             
             const newAddresses = [...addresses, ...importedAddresses]
-            handleChange(newAddresses)
+            // 只更新本地状态，不立即通知外部
+            setAddresses(newAddresses)
+            // 延迟通知外部，避免立即触发表单提交
+            setTimeout(() => {
+              onChange(newAddresses)
+            }, 0)
             
             toast({
               title: '导入成功',
@@ -383,6 +408,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
           <CardTitle className="text-lg">采集地址配置</CardTitle>
           <div className="flex items-center space-x-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={handleImport}
@@ -392,6 +418,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
               导入
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={handleExport}
@@ -401,6 +428,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
               导出
             </Button>
             <Button
+              type="button"
               size="sm"
               onClick={() => setShowAddForm(true)}
               disabled={disabled}
@@ -497,6 +525,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
               </div>
               <div className="flex justify-end space-x-2 mt-4">
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     setShowAddForm(false)
@@ -511,7 +540,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                 >
                   取消
                 </Button>
-                <Button onClick={handleAdd}>
+                <Button type="button" onClick={handleAdd}>
                   添加
                 </Button>
               </div>
@@ -524,6 +553,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
           <div className="text-center py-8 text-gray-500">
             <div className="mb-2">暂无采集地址</div>
             <Button
+              type="button"
               variant="outline"
               onClick={() => setShowAddForm(true)}
               disabled={disabled}
@@ -674,6 +704,7 @@ function AddressRow({
         <TableCell className="text-right">
           <div className="flex items-center justify-end space-x-1">
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -682,6 +713,7 @@ function AddressRow({
               <Check className="h-4 w-4" />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -713,6 +745,7 @@ function AddressRow({
       <TableCell className="text-right">
         <div className="flex items-center justify-end space-x-1">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-8 w-8"
@@ -722,6 +755,7 @@ function AddressRow({
             <Edit className="h-4 w-4" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-8 w-8"
@@ -731,6 +765,7 @@ function AddressRow({
             <Copy className="h-4 w-4" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-red-600 hover:text-red-700"
