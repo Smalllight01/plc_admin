@@ -81,7 +81,9 @@ def create_app(plc_collector=None):
     # 设置PLC采集器（如果提供）
     if plc_collector:
         from api.device_routes import set_plc_collector
+        from api.settings_routes import set_plc_collector as set_settings_plc_collector
         set_plc_collector(plc_collector)
+        set_settings_plc_collector(plc_collector)
     
     # 注册路由
     setup_auth_routes(app)

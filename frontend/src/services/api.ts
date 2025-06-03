@@ -482,14 +482,7 @@ export const settingsService = {
     return response.data.data!
   },
 
-  /**
-   * 测试邮件配置
-   * @returns 测试结果
-   */
-  async testEmailSettings(): Promise<any> {
-    const response = await apiClient.post<ApiResponse<any>>('/api/settings/test-email')
-    return response.data.data!
-  },
+
 }
 
 /**

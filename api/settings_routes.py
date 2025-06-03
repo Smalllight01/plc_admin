@@ -11,6 +11,14 @@ from loguru import logger
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
+# PLC采集器引用
+_plc_collector = None
+
+def set_plc_collector(collector):
+    """设置PLC采集器引用"""
+    global _plc_collector
+    _plc_collector = collector
+
 # 系统设置数据模型
 class SystemSettings(BaseModel):
     # 系统基本设置
@@ -19,25 +27,12 @@ class SystemSettings(BaseModel):
     timezone: str = "Asia/Shanghai"
     language: str = "zh-CN"
     
-    # 数据采集设置
-    collection_interval: int = 5000
-    data_retention_days: int = 30
-    max_concurrent_connections: int = 100
-    connection_timeout: int = 10000
-    
-    # 告警设置
-    enable_email_alerts: bool = False
-    email_smtp_server: str = ""
-    email_smtp_port: int = 587
-    email_username: str = ""
-    email_password: str = ""
-    email_from: str = ""
-    
-    # 安全设置
-    session_timeout: int = 3600
-    password_min_length: int = 8
-    password_require_special: bool = True
-    max_login_attempts: int = 5
+    # PLC数据采集设置
+    plc_collect_interval: int = 5  # PLC采集间隔（秒）
+    plc_connect_timeout: int = 5000  # PLC连接超时（毫秒）
+    plc_receive_timeout: int = 10000  # PLC接收超时（毫秒）
+    data_retention_days: int = 30  # 数据保留天数
+    max_concurrent_connections: int = 100  # 最大并发连接数
     
     # 日志设置
     log_level: str = "INFO"
@@ -97,6 +92,15 @@ async def update_system_settings(
     try:
         if save_settings(settings):
             logger.info(f"用户 {current_user.username} 更新系统设置")
+            
+            # 通知PLC采集器重新加载配置
+            if _plc_collector:
+                try:
+                    _plc_collector.reload_settings()
+                    logger.info("PLC采集器配置已重新加载")
+                except Exception as e:
+                    logger.error(f"重新加载PLC采集器配置失败: {e}")
+            
             return {
                 "success": True,
                 "data": settings.dict(),
@@ -109,28 +113,3 @@ async def update_system_settings(
     except Exception as e:
         logger.error(f"更新系统设置失败: {e}")
         raise HTTPException(status_code=500, detail="更新系统设置失败")
-
-@router.post("/test-email")
-async def test_email_settings(
-    current_user: User = Depends(get_super_admin_user)
-) -> dict:
-    """测试邮件配置"""
-    try:
-        settings = load_settings()
-        
-        if not settings.enable_email_alerts:
-            raise HTTPException(status_code=400, detail="邮件告警未启用")
-        
-        if not all([settings.email_smtp_server, settings.email_username, settings.email_from]):
-            raise HTTPException(status_code=400, detail="邮件配置不完整")
-        
-        # 这里可以添加实际的邮件发送测试逻辑
-        # 目前只是模拟测试成功
-        logger.info(f"用户 {current_user.username} 测试邮件配置")
-        
-        return {"message": "邮件配置测试成功"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"测试邮件配置失败: {e}")
-        raise HTTPException(status_code=500, detail="测试邮件配置失败")

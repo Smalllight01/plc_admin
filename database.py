@@ -769,6 +769,64 @@ class DatabaseManager:
             logger.error(f"查询统计数据失败: {e}")
             return {}
     
+    def cleanup_old_data(self, cutoff_timestamp: str) -> int:
+        """清理过期的历史数据
+        
+        Args:
+            cutoff_timestamp: 截止时间戳，格式为 'YYYY-MM-DDTHH:MM:SSZ'
+            
+        Returns:
+            删除的记录数量
+        """
+        try:
+            if not self.influx_query_api:
+                logger.error("InfluxDB查询API未初始化")
+                return 0
+            
+            # 构建删除查询
+            delete_query = f'''
+            from(bucket: "{self.bucket}")
+            |> range(start: 1970-01-01T00:00:00Z, stop: {cutoff_timestamp})
+            |> drop(columns: ["_start", "_stop"])
+            '''
+            
+            # 先查询要删除的数据数量
+            count_query = f'''
+            from(bucket: "{self.bucket}")
+            |> range(start: 1970-01-01T00:00:00Z, stop: {cutoff_timestamp})
+            |> count()
+            '''
+            
+            # 查询要删除的记录数
+            count_result = self.influx_query_api.query(count_query)
+            deleted_count = 0
+            
+            for table in count_result:
+                for record in table.records:
+                    deleted_count += record.get_value()
+            
+            if deleted_count > 0:
+                # 执行删除操作
+                from influxdb_client.client.delete_api import DeleteApi
+                delete_api = self.influx_client.delete_api()
+                
+                # 删除指定时间范围内的数据
+                delete_api.delete(
+                    start="1970-01-01T00:00:00Z",
+                    stop=cutoff_timestamp,
+                    bucket=self.bucket
+                )
+                
+                logger.info(f"成功删除{deleted_count}条过期数据")
+            else:
+                logger.info("没有找到需要删除的过期数据")
+            
+            return deleted_count
+            
+        except Exception as e:
+            logger.error(f"清理过期数据失败: {e}")
+            return 0
+    
     def close(self):
         """关闭数据库连接"""
         if self.influx_client:

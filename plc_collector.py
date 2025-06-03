@@ -24,6 +24,8 @@ from HslCommunication.Core.Pipe import PipeTcpNet
 from config import config
 from database import db_manager
 from models import Device, CollectLog
+import json
+import os
 
 class PLCConnection:
     """PLC连接类"""
@@ -64,6 +66,7 @@ class PLCConnection:
             # 设置通信管道
             if self.device.protocol.lower() == 'tcp':
                 pipe_tcp_net = PipeTcpNet(self.device.ip_address, self.device.port)
+                # 使用默认配置，稍后会在PLCCollector中更新
                 pipe_tcp_net.ConnectTimeOut = config.PLC_CONNECT_TIMEOUT
                 pipe_tcp_net.ReceiveTimeOut = config.PLC_RECEIVE_TIMEOUT
                 self.plc.CommunicationPipe = pipe_tcp_net
@@ -113,9 +116,19 @@ class PLCConnection:
                 if self.plc and self.is_connected:
                     self.plc.ConnectClose()
                     self.is_connected = False
-                    logger.info(f"PLC连接已断开: {self.device.name}")
+                    logger.info(f"PLC断开连接: {self.device.name}")
             except Exception as e:
-                logger.error(f"断开PLC连接异常 {self.device.name}: {e}")
+                logger.error(f"断开PLC连接失败 {self.device.name}: {e}")
+    
+    def update_timeouts(self, connect_timeout: int, receive_timeout: int):
+        """更新连接和接收超时配置"""
+        try:
+            if self.plc and hasattr(self.plc, 'CommunicationPipe') and self.plc.CommunicationPipe:
+                self.plc.CommunicationPipe.ConnectTimeOut = connect_timeout
+                self.plc.CommunicationPipe.ReceiveTimeOut = receive_timeout
+                logger.info(f"更新PLC超时配置 {self.device.name}: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
+        except Exception as e:
+            logger.error(f"更新PLC超时配置失败 {self.device.name}: {e}")
     
     def read_addresses(self, addresses: List[str]) -> tuple[Dict[str, Optional[float]], bool]:
         """批量读取地址数据
@@ -207,6 +220,31 @@ class PLCCollector:
         self.scheduler = BackgroundScheduler()
         self.is_running = False
         self._lock = threading.Lock()
+        self.current_settings = None
+    
+    def _load_system_settings(self) -> dict:
+        """加载系统设置"""
+        try:
+            settings_file = "system_settings.json"
+            if os.path.exists(settings_file):
+                with open(settings_file, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+                    return settings
+            else:
+                # 返回默认设置
+                return {
+                    "plc_collect_interval": config.PLC_COLLECT_INTERVAL,
+                    "plc_connect_timeout": config.PLC_CONNECT_TIMEOUT,
+                    "plc_receive_timeout": config.PLC_RECEIVE_TIMEOUT
+                }
+        except Exception as e:
+            logger.error(f"加载系统设置失败: {e}")
+            # 返回默认设置
+            return {
+                "plc_collect_interval": config.PLC_COLLECT_INTERVAL,
+                "plc_connect_timeout": config.PLC_CONNECT_TIMEOUT,
+                "plc_receive_timeout": config.PLC_RECEIVE_TIMEOUT
+            }
     
     def start(self):
         """启动采集服务"""
@@ -216,21 +254,86 @@ class PLCCollector:
         
         logger.info("启动PLC采集服务")
         
+        # 加载系统设置
+        self.current_settings = self._load_system_settings()
+        
         # 加载设备配置
         self._load_devices()
         
-        # 启动定时任务
+        # 启动数据采集定时任务
+        collect_interval = self.current_settings.get('plc_collect_interval', config.PLC_COLLECT_INTERVAL)
         self.scheduler.add_job(
             func=self._collect_all_devices,
             trigger="interval",
-            seconds=config.PLC_COLLECT_INTERVAL,
+            seconds=collect_interval,
             id='plc_collect_job'
+        )
+        
+        # 启动数据清理定时任务（每天凌晨2点执行）
+        self.scheduler.add_job(
+            func=self._cleanup_old_data,
+            trigger="cron",
+            hour=2,
+            minute=0,
+            id='data_cleanup_job'
         )
         
         self.scheduler.start()
         self.is_running = True
         
-        logger.info(f"PLC采集服务启动成功，采集间隔: {config.PLC_COLLECT_INTERVAL}秒")
+        logger.info(f"PLC采集服务启动成功，采集间隔: {collect_interval}秒，数据清理任务已启动")
+    
+    def reload_settings(self):
+        """重新加载系统设置并应用配置"""
+        if not self.is_running:
+            logger.warning("PLC采集服务未运行，无法重新加载设置")
+            return
+        
+        logger.info("重新加载PLC采集配置")
+        
+        # 加载新的系统设置
+        new_settings = self._load_system_settings()
+        old_interval = self.current_settings.get('plc_collect_interval', config.PLC_COLLECT_INTERVAL) if self.current_settings else config.PLC_COLLECT_INTERVAL
+        new_interval = new_settings.get('plc_collect_interval', config.PLC_COLLECT_INTERVAL)
+        
+        self.current_settings = new_settings
+        
+        # 更新所有连接的超时配置
+        connect_timeout = new_settings.get('plc_connect_timeout', config.PLC_CONNECT_TIMEOUT)
+        receive_timeout = new_settings.get('plc_receive_timeout', config.PLC_RECEIVE_TIMEOUT)
+        
+        logger.info(f"应用新的超时配置: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
+        
+        with self._lock:
+            for connection in self.connections.values():
+                connection.update_timeouts(connect_timeout, receive_timeout)
+        
+        # 检查最大并发连接数是否发生变化
+        old_max_connections = self.current_settings.get('max_concurrent_connections', 100) if hasattr(self, 'current_settings') and self.current_settings else 100
+        new_max_connections = new_settings.get('max_concurrent_connections', 100)
+        
+        # 如果采集间隔发生变化，重新调度任务
+        if old_interval != new_interval:
+            logger.info(f"采集间隔从 {old_interval}秒 更改为 {new_interval}秒，重新调度任务")
+            
+            # 移除旧任务
+            if self.scheduler.get_job('plc_collect_job'):
+                self.scheduler.remove_job('plc_collect_job')
+            
+            # 添加新任务
+            self.scheduler.add_job(
+                func=self._collect_all_devices,
+                trigger="interval",
+                seconds=new_interval,
+                id='plc_collect_job'
+            )
+        
+        # 如果最大并发连接数发生变化，重新加载设备
+        if old_max_connections != new_max_connections:
+            logger.info(f"最大并发连接数从 {old_max_connections} 更改为 {new_max_connections}，重新加载设备")
+            self._load_devices()
+        
+        logger.info(f"PLC采集配置重新加载完成，当前采集间隔: {new_interval}秒，最大并发连接数: {new_max_connections}")
     
     def stop(self):
         """停止采集服务"""
@@ -253,8 +356,11 @@ class PLCCollector:
         logger.info("PLC采集服务已停止")
     
     def _load_devices(self):
-        """加载设备配置"""
+        """加载设备配置（支持最大并发连接数限制）"""
         try:
+            # 获取最大并发连接数配置
+            max_connections = self.current_settings.get('max_concurrent_connections', 100) if self.current_settings else 100
+            
             with db_manager.get_db() as db:
                 devices = db.query(Device).filter(Device.is_active == True).all()
                 
@@ -271,6 +377,14 @@ class PLCCollector:
                         'addresses': device.addresses,
                         'group_id': device.group_id
                     })
+                
+                # 按组别和设备ID排序，确保连接的优先级
+                device_data.sort(key=lambda d: (d['group_id'] or 999, d['id']))
+                
+                # 应用最大并发连接数限制
+                if len(device_data) > max_connections:
+                    logger.warning(f"设备数量({len(device_data)})超过最大并发连接数({max_connections})，只连接前{max_connections}个设备")
+                    device_data = device_data[:max_connections]
                 
                 with self._lock:
                     # 清除旧连接
@@ -293,6 +407,13 @@ class PLCCollector:
                         )
                         
                         connection = PLCConnection(device_obj)
+                        
+                        # 应用动态配置的超时参数
+                        if self.current_settings:
+                            connect_timeout = self.current_settings.get('plc_connect_timeout', config.PLC_CONNECT_TIMEOUT)
+                            receive_timeout = self.current_settings.get('plc_receive_timeout', config.PLC_RECEIVE_TIMEOUT)
+                            connection.update_timeouts(connect_timeout, receive_timeout)
+                        
                         self.connections[data['id']] = connection
                         
                         # 尝试连接并更新数据库状态
@@ -306,7 +427,7 @@ class PLCCollector:
                                 db_device.status = 'online' if is_connected else 'offline'
                                 update_db.commit()
                 
-                logger.info(f"加载了 {len(device_data)} 个设备配置")
+                logger.info(f"加载了 {len(device_data)} 个设备配置，最大并发连接数: {max_connections}")
                 
         except Exception as e:
             logger.error(f"加载设备配置失败: {e}")
@@ -473,3 +594,31 @@ class PLCCollector:
                         'status': 'online' if connection.is_connected else 'offline'
                     }
                 return status
+    
+    def _cleanup_old_data(self):
+        """清理过期的历史数据"""
+        try:
+            # 获取数据保留天数配置
+            retention_days = self.current_settings.get('data_retention_days', 30) if self.current_settings else 30
+            
+            if retention_days <= 0:
+                logger.info("数据保留天数设置为0或负数，跳过数据清理")
+                return
+            
+            logger.info(f"开始清理{retention_days}天前的历史数据")
+            
+            # 计算截止时间
+            from datetime import datetime, timedelta
+            cutoff_time = datetime.utcnow() - timedelta(days=retention_days)
+            cutoff_timestamp = cutoff_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+            
+            # 调用数据库管理器的清理方法
+            deleted_count = db_manager.cleanup_old_data(cutoff_timestamp)
+            
+            if deleted_count > 0:
+                logger.info(f"数据清理完成，删除了{deleted_count}条记录")
+            else:
+                logger.info("没有需要清理的过期数据")
+                
+        except Exception as e:
+            logger.error(f"数据清理失败: {e}")

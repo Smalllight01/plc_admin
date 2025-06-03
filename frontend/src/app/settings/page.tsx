@@ -34,10 +34,6 @@ import { apiService } from '@/services/api'
 import {
   Settings,
   Database,
-  Bell,
-  Shield,
-  Clock,
-  Mail,
   Server,
   Save,
   RefreshCw,
@@ -50,25 +46,12 @@ interface SystemSettings {
   timezone: string
   language: string
   
-  // 数据采集设置
-  collection_interval: number
+  // PLC数据采集设置
+  plc_collect_interval: number
+  plc_connect_timeout: number
+  plc_receive_timeout: number
   data_retention_days: number
   max_concurrent_connections: number
-  connection_timeout: number
-  
-  // 告警设置
-  enable_email_alerts: boolean
-  email_smtp_server: string
-  email_smtp_port: number
-  email_username: string
-  email_password: string
-  email_from: string
-  
-  // 安全设置
-  session_timeout: number
-  password_min_length: number
-  password_require_special: boolean
-  max_login_attempts: number
   
   // 日志设置
   log_level: string
@@ -87,20 +70,11 @@ export default function SettingsPage() {
     system_description: '工业PLC设备管理与数据采集系统',
     timezone: 'Asia/Shanghai',
     language: 'zh-CN',
-    collection_interval: 5000,
+    plc_collect_interval: 5,
+    plc_connect_timeout: 5000,
+    plc_receive_timeout: 10000,
     data_retention_days: 30,
     max_concurrent_connections: 100,
-    connection_timeout: 10000,
-    enable_email_alerts: false,
-    email_smtp_server: '',
-    email_smtp_port: 587,
-    email_username: '',
-    email_password: '',
-    email_from: '',
-    session_timeout: 3600,
-    password_min_length: 8,
-    password_require_special: true,
-    max_login_attempts: 5,
     log_level: 'INFO',
     log_retention_days: 7,
     enable_audit_log: true,
@@ -159,23 +133,7 @@ export default function SettingsPage() {
     },
   })
 
-  // 测试邮件配置
-  const testEmailMutation = useMutation({
-    mutationFn: () => apiService.testEmailSettings(),
-    onSuccess: () => {
-      toast({
-        title: '测试成功',
-        description: '邮件配置测试通过，测试邮件已发送',
-      })
-    },
-    onError: (error: any) => {
-      toast({
-        title: '测试失败',
-        description: error.response?.data?.message || '邮件配置测试失败',
-        variant: 'destructive',
-      })
-    },
-  })
+
 
   /**
    * 处理表单字段变化
@@ -191,12 +149,7 @@ export default function SettingsPage() {
     updateMutation.mutate(formData)
   }
 
-  /**
-   * 测试邮件配置
-   */
-  const handleTestEmail = () => {
-    testEmailMutation.mutate()
-  }
+
 
   /**
    * 手动刷新数据
@@ -264,7 +217,7 @@ export default function SettingsPage() {
 
           {/* 设置选项卡 */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm border-0 shadow-sm rounded-xl p-2">
+            <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm border-0 shadow-sm rounded-xl p-2">
               <TabsTrigger value="system" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white transition-all duration-200">
                 <Settings className="h-4 w-4" />
                 <span>系统</span>
@@ -272,14 +225,6 @@ export default function SettingsPage() {
               <TabsTrigger value="data" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white transition-all duration-200">
                 <Database className="h-4 w-4" />
                 <span>数据</span>
-              </TabsTrigger>
-              <TabsTrigger value="alerts" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white transition-all duration-200">
-                <Bell className="h-4 w-4" />
-                <span>告警</span>
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white transition-all duration-200">
-                <Shield className="h-4 w-4" />
-                <span>安全</span>
               </TabsTrigger>
               <TabsTrigger value="logs" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white transition-all duration-200">
                 <Server className="h-4 w-4" />
@@ -383,18 +328,48 @@ export default function SettingsPage() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="collection_interval">采集间隔 (毫秒)</Label>
+                      <Label htmlFor="plc_collect_interval">PLC采集间隔 (秒)</Label>
                       <Input
-                        id="collection_interval"
+                        id="plc_collect_interval"
                         type="number"
-                        value={formData.collection_interval}
-                        onChange={(e) => handleFieldChange('collection_interval', parseInt(e.target.value) || 5000)}
+                        value={formData.plc_collect_interval}
+                        onChange={(e) => handleFieldChange('plc_collect_interval', parseInt(e.target.value) || 5)}
+                        placeholder="5"
+                        min="1"
+                        max="60"
+                        disabled={isLoading_}
+                      />
+                      <p className="text-sm text-gray-500">建议值：1-60秒</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="plc_connect_timeout">PLC连接超时 (毫秒)</Label>
+                      <Input
+                        id="plc_connect_timeout"
+                        type="number"
+                        value={formData.plc_connect_timeout}
+                        onChange={(e) => handleFieldChange('plc_connect_timeout', parseInt(e.target.value) || 5000)}
                         placeholder="5000"
+                        min="1000"
+                        max="30000"
+                        disabled={isLoading_}
+                      />
+                      <p className="text-sm text-gray-500">PLC设备连接超时时间</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="plc_receive_timeout">PLC接收超时 (毫秒)</Label>
+                      <Input
+                        id="plc_receive_timeout"
+                        type="number"
+                        value={formData.plc_receive_timeout}
+                        onChange={(e) => handleFieldChange('plc_receive_timeout', parseInt(e.target.value) || 10000)}
+                        placeholder="10000"
                         min="1000"
                         max="60000"
                         disabled={isLoading_}
                       />
-                      <p className="text-sm text-gray-500">建议值：1000-60000毫秒</p>
+                      <p className="text-sm text-gray-500">PLC数据接收超时时间</p>
                     </div>
                     
                     <div className="space-y-2">
@@ -424,204 +399,14 @@ export default function SettingsPage() {
                         max="1000"
                         disabled={isLoading_}
                       />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="connection_timeout">连接超时 (毫秒)</Label>
-                      <Input
-                        id="connection_timeout"
-                        type="number"
-                        value={formData.connection_timeout}
-                        onChange={(e) => handleFieldChange('connection_timeout', parseInt(e.target.value) || 10000)}
-                        placeholder="10000"
-                        min="1000"
-                        max="60000"
-                        disabled={isLoading_}
-                      />
+                      <p className="text-sm text-gray-500">系统最大并发连接数</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* 告警设置 */}
-            <TabsContent value="alerts">
-              <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-3">
-                    <div className="bg-orange-100 p-2 rounded-lg">
-                      <Bell className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <span className="text-gray-800">告警设置</span>
-                  </CardTitle>
-                  <CardDescription className="text-gray-600">
-                    配置邮件告警和通知参数
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="enable_email_alerts"
-                      checked={formData.enable_email_alerts}
-                      onCheckedChange={(checked) => handleFieldChange('enable_email_alerts', checked)}
-                      disabled={isLoading_}
-                    />
-                    <Label htmlFor="enable_email_alerts">启用邮件告警</Label>
-                  </div>
-                  
-                  {formData.enable_email_alerts && (
-                    <div className="space-y-6 pl-6 border-l-2 border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="email_smtp_server">SMTP服务器</Label>
-                          <Input
-                            id="email_smtp_server"
-                            value={formData.email_smtp_server}
-                            onChange={(e) => handleFieldChange('email_smtp_server', e.target.value)}
-                            placeholder="smtp.example.com"
-                            disabled={isLoading_}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="email_smtp_port">SMTP端口</Label>
-                          <Input
-                            id="email_smtp_port"
-                            type="number"
-                            value={formData.email_smtp_port}
-                            onChange={(e) => handleFieldChange('email_smtp_port', parseInt(e.target.value) || 587)}
-                            placeholder="587"
-                            min="1"
-                            max="65535"
-                            disabled={isLoading_}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="email_username">用户名</Label>
-                          <Input
-                            id="email_username"
-                            value={formData.email_username}
-                            onChange={(e) => handleFieldChange('email_username', e.target.value)}
-                            placeholder="username@example.com"
-                            disabled={isLoading_}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="email_password">密码</Label>
-                          <Input
-                            id="email_password"
-                            type="password"
-                            value={formData.email_password}
-                            onChange={(e) => handleFieldChange('email_password', e.target.value)}
-                            placeholder="请输入邮箱密码"
-                            disabled={isLoading_}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="email_from">发件人地址</Label>
-                        <Input
-                          id="email_from"
-                          value={formData.email_from}
-                          onChange={(e) => handleFieldChange('email_from', e.target.value)}
-                          placeholder="noreply@example.com"
-                          disabled={isLoading_}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          onClick={handleTestEmail}
-                          disabled={testEmailMutation.isPending || isLoading_}
-                          className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-all duration-200"
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          {testEmailMutation.isPending ? '测试中...' : '测试邮件配置'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            {/* 安全设置 */}
-            <TabsContent value="security">
-              <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-3">
-                    <div className="bg-red-100 p-2 rounded-lg">
-                      <Shield className="h-5 w-5 text-red-600" />
-                    </div>
-                    <span className="text-gray-800">安全设置</span>
-                  </CardTitle>
-                  <CardDescription className="text-gray-600">
-                    配置用户认证和密码策略
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="session_timeout">会话超时 (秒)</Label>
-                      <Input
-                        id="session_timeout"
-                        type="number"
-                        value={formData.session_timeout}
-                        onChange={(e) => handleFieldChange('session_timeout', parseInt(e.target.value) || 3600)}
-                        placeholder="3600"
-                        min="300"
-                        max="86400"
-                        disabled={isLoading_}
-                      />
-                      <p className="text-sm text-gray-500">用户无操作后自动登出的时间</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="max_login_attempts">最大登录尝试次数</Label>
-                      <Input
-                        id="max_login_attempts"
-                        type="number"
-                        value={formData.max_login_attempts}
-                        onChange={(e) => handleFieldChange('max_login_attempts', parseInt(e.target.value) || 5)}
-                        placeholder="5"
-                        min="3"
-                        max="10"
-                        disabled={isLoading_}
-                      />
-                      <p className="text-sm text-gray-500">超过次数后账户将被锁定</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="password_min_length">密码最小长度</Label>
-                      <Input
-                        id="password_min_length"
-                        type="number"
-                        value={formData.password_min_length}
-                        onChange={(e) => handleFieldChange('password_min_length', parseInt(e.target.value) || 8)}
-                        placeholder="8"
-                        min="6"
-                        max="32"
-                        disabled={isLoading_}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="password_require_special"
-                      checked={formData.password_require_special}
-                      onCheckedChange={(checked) => handleFieldChange('password_require_special', checked)}
-                      disabled={isLoading_}
-                    />
-                    <Label htmlFor="password_require_special">密码必须包含特殊字符</Label>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* 日志设置 */}
             <TabsContent value="logs">

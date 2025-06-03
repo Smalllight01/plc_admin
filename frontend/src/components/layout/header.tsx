@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/store/auth'
-import { authService } from '@/services/api'
+import { authService, apiService } from '@/services/api'
 import {
   LogOut,
   User,
@@ -47,6 +48,24 @@ export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { user, logout } = useAuthStore()
+
+  // 获取系统设置
+  const { data: systemSettings } = useQuery({
+    queryKey: ['system-settings'],
+    queryFn: async () => {
+      try {
+        return await apiService.getSystemSettings()
+      } catch (error) {
+        console.error('获取系统设置失败:', error)
+        return null
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
+  })
+
+  // 从系统设置中获取标题信息，如果没有则使用默认值
+  const systemName = systemSettings?.system_name || 'PLC数据采集平台'
+  const systemDescription = systemSettings?.system_description || '实时监控和数据管理系统'
 
   /**
    * 处理用户登出
@@ -166,10 +185,10 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                PLC数据采集平台
+                {systemName}
               </h1>
               <p className="text-sm text-blue-600 font-medium">
-                实时监控和数据管理系统
+                {systemDescription}
               </p>
             </div>
           </div>
