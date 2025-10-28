@@ -167,6 +167,7 @@ class CollectLog(Base):
     device_id = Column(Integer, ForeignKey('devices.id'), nullable=False, comment='设备ID')
     status = Column(String(20), nullable=False, comment='采集状态')
     message = Column(Text, comment='采集信息')
+    response_time = Column(Float, comment='响应时间(ms)')
     collect_time = Column(DateTime, default=datetime.utcnow, comment='采集时间')
     
     def to_dict(self):
@@ -176,5 +177,6 @@ class CollectLog(Base):
             'device_id': self.device_id,
             'status': self.status,
             'message': self.message,
+            'response_time': self.response_time,
             'collect_time': self.collect_time.isoformat() if self.collect_time else None
         }

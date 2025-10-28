@@ -111,7 +111,16 @@ function CompactDeviceCard({ device, onClick }: { device: Device; onClick: () =>
     }
   }, [deviceData, device.id])
 
-  const addresses = device.addresses || []
+  const addresses = (() => {
+    if (!device.addresses) return []
+    if (Array.isArray(device.addresses)) return device.addresses
+    try {
+      return JSON.parse(device.addresses)
+    } catch (error) {
+      console.error('Failed to parse device addresses:', error)
+      return []
+    }
+  })()
   const activeAddresses = addresses.filter((addr: any) => addr.name).length
   const dataCount = realtimeData?.data?.length || 0
   const isOnline = device.is_connected && device.status === 'online'
@@ -130,7 +139,7 @@ function CompactDeviceCard({ device, onClick }: { device: Device; onClick: () =>
             </h3>
             <p className="text-xs text-muted-foreground font-mono mt-1">{device.ip_address}</p>
           </div>
-          <DeviceStatusBadge status={device.status} isConnected={device.is_connected} />
+          <DeviceStatusBadge status={device.status || 'unknown'} isConnected={device.is_connected} />
         </div>
         
         {/* 数据指标 */}
@@ -186,7 +195,16 @@ function DeviceListRow({ device, onClick }: { device: Device; onClick: () => voi
     }
   }, [deviceData, device.id])
 
-  const addresses = device.addresses || []
+  const addresses = (() => {
+    if (!device.addresses) return []
+    if (Array.isArray(device.addresses)) return device.addresses
+    try {
+      return JSON.parse(device.addresses)
+    } catch (error) {
+      console.error('Failed to parse device addresses:', error)
+      return []
+    }
+  })()
   const activeAddresses = addresses.filter((addr: any) => addr.name).length
   const dataCount = realtimeData?.data?.length || 0
   const latestValue = realtimeData?.data?.[0]?.value
@@ -198,7 +216,7 @@ function DeviceListRow({ device, onClick }: { device: Device; onClick: () => voi
     >
       <div className="flex items-center gap-4 flex-1">
         <div className="flex items-center gap-2">
-          <DeviceStatusBadge status={device.status} isConnected={device.is_connected} />
+          <DeviceStatusBadge status={device.status || 'unknown'} isConnected={device.is_connected} />
           <span className="font-medium">{device.name}</span>
         </div>
         
@@ -249,7 +267,16 @@ function DeviceCard({ device, onClick }: { device: Device; onClick: () => void }
   }, [deviceData, device.id])
 
   // 获取地址配置
-  const addresses = device.addresses || []
+  const addresses = (() => {
+    if (!device.addresses) return []
+    if (Array.isArray(device.addresses)) return device.addresses
+    try {
+      return JSON.parse(device.addresses)
+    } catch (error) {
+      console.error('Failed to parse device addresses:', error)
+      return []
+    }
+  })()
   const addressCount = addresses.length
   const activeAddresses = addresses.filter((addr: any) => addr.name).length
 
@@ -258,7 +285,7 @@ function DeviceCard({ device, onClick }: { device: Device; onClick: () => void }
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{device.name}</CardTitle>
-          <DeviceStatusBadge status={device.status} isConnected={device.is_connected} />
+          <DeviceStatusBadge status={device.status || 'unknown'} isConnected={device.is_connected} />
         </div>
         <CardDescription className="flex items-center gap-2">
           <Cpu className="h-4 w-4" />
@@ -372,7 +399,7 @@ export default function RealtimePage() {
     queryFn: () => apiService.getGroups({ page: 1, page_size: 100 }),
   })
 
-  const devices = devicesData?.items || []
+  const devices = devicesData?.data || []
   const groups = groupsData?.data || []
 
   // 过滤和排序设备
@@ -413,7 +440,7 @@ export default function RealtimePage() {
 
   // 按分组组织设备（用于分组显示）
   const devicesByGroup = paginatedDevices.reduce((acc: any, device: Device) => {
-    const groupName = device.group_name || '未分组'
+    const groupName = device.group?.name || '未分组'
     if (!acc[groupName]) {
       acc[groupName] = []
     }

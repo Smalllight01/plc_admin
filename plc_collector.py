@@ -4,7 +4,6 @@ PLC数据采集服务
 负责PLC设备的连接、数据采集和存储
 """
 
-import clr
 import threading
 import time
 from datetime import datetime
@@ -12,14 +11,32 @@ from typing import Dict, List, Optional
 from loguru import logger
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# 确保 HslCommunication.dll 在 Python 的搜索路径中
-clr.AddReference(r'HslCommunication')
-
-# 导入需要的命名空间和类
-from HslCommunication.Profinet.Omron import OmronFinsNet, OmronPlcType
-from HslCommunication.Profinet.Siemens import SiemensS7Net, SiemensPLCS
-from HslCommunication.Core import DataFormat
-from HslCommunication.Core.Pipe import PipeTcpNet
+# 尝试导入CLR和HslCommunication
+try:
+    import clr
+    # 确保 HslCommunication.dll 在 Python 的搜索路径中
+    clr.AddReference(r'HslCommunication')
+    
+    # 导入需要的命名空间和类
+    from HslCommunication.Profinet.Omron import OmronFinsNet, OmronPlcType
+    from HslCommunication.Profinet.Siemens import SiemensS7Net, SiemensPLCS
+    from HslCommunication.Core import DataFormat
+    from HslCommunication.Core.Pipe import PipeTcpNet
+    
+    CLR_AVAILABLE = True
+    logger.info("CLR和HslCommunication库加载成功")
+except Exception as e:
+    logger.error(f"CLR或HslCommunication库加载失败: {e}")
+    logger.error("请确保已安装Mono运行时和HslCommunication.dll")
+    CLR_AVAILABLE = False
+    
+    # 定义占位符类以避免导入错误
+    class OmronFinsNet: pass
+    class OmronPlcType: pass
+    class SiemensS7Net: pass
+    class SiemensPLCS: pass
+    class DataFormat: pass
+    class PipeTcpNet: pass
 
 from config import config
 from database import db_manager
@@ -43,6 +60,11 @@ class PLCConnection:
     def _create_plc_instance(self):
         """根据设备配置创建PLC实例"""
         try:
+            if not globals().get('CLR_AVAILABLE', False):
+                logger.error(f"CLR环境不可用，无法创建PLC实例: {self.device.name}")
+                self.last_error = "CLR环境不可用"
+                return
+                
             plc_type_lower = self.device.plc_type.lower()
             
             if 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
@@ -221,6 +243,16 @@ class PLCCollector:
         self.is_running = False
         self._lock = threading.Lock()
         self.current_settings = None
+        
+        # 检查CLR环境是否可用
+        if not globals().get('CLR_AVAILABLE', False):
+            logger.error("CLR环境不可用，PLC采集功能将被禁用")
+            logger.error("请安装Mono运行时并确保HslCommunication.dll可用")
+            logger.error("系统将继续运行，但PLC采集功能不可用")
+            self.clr_available = False
+        else:
+            self.clr_available = True
+            logger.info("CLR环境正常，PLC采集功能可用")
     
     def _load_system_settings(self) -> dict:
         """加载系统设置"""
@@ -250,6 +282,11 @@ class PLCCollector:
         """启动采集服务"""
         if self.is_running:
             logger.warning("PLC采集服务已在运行")
+            return
+        
+        if not self.clr_available:
+            logger.warning("CLR环境不可用，PLC采集服务无法启动")
+            logger.warning("系统将继续运行，但PLC采集功能不可用")
             return
         
         logger.info("启动PLC采集服务")

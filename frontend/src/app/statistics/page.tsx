@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { MainLayout } from '@/components/layout/main-layout'
 import {
@@ -41,13 +42,15 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Monitor,
-  HardDrive
+  HardDrive,
+  CheckCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { dataService, deviceService, groupService } from '@/services/api'
 import { StatisticsData, Device, Group, StatisticsQueryParams } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
+import { performanceService } from '@/services/performanceService'
 
 /**
  * 数据统计页面组件
@@ -76,7 +79,13 @@ export default function StatisticsPage() {
   const [anomalySeverityFilter, setAnomalySeverityFilter] = useState<string>('all')
   const [anomalyTypeFilter, setAnomalyTypeFilter] = useState<string>('all')
   
-  const { user } = useAuthStore()
+  // 性能分析相关状态
+  const [performanceLoading, setPerformanceLoading] = useState(false)
+  const [performanceData, setPerformanceData] = useState<any>(null)
+  const [performanceError, setPerformanceError] = useState<string | null>(null)
+  const [trends, setTrends] = useState<any[]>([])
+  
+  const { user, isAuthenticated, token } = useAuthStore()
 
   /**
    * 获取统计数据
@@ -98,13 +107,29 @@ export default function StatisticsPage() {
         params.group_id = parseInt(selectedGroup)
       }
       
+      console.log('统计数据查询参数:', params)
       const data = await dataService.getStatistics(params)
-      setStatistics(data)
+      console.log('获取到的统计数据:', data)
+      setStatistics(data || [])
       
     } catch (error: any) {
       console.error('获取统计数据失败:', error)
-      const errorMessage = error.response?.data?.detail?.error || '获取统计数据失败'
+      let errorMessage = '获取统计数据失败'
+      
+      if (error.code === 'NETWORK_ERROR') {
+        errorMessage = '网络连接失败，请检查后端服务是否正常运行'
+      } else if (error.response?.status === 500) {
+        errorMessage = '服务器内部错误，请稍后重试'
+      } else if (error.response?.data?.detail?.error) {
+        errorMessage = error.response.data.detail.error
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       setError(errorMessage)
+      setStatistics([])
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -132,12 +157,26 @@ export default function StatisticsPage() {
       }
       
       const data = await dataService.getAnomalies(params)
-      setAnomalyData(data)
+      setAnomalyData(data || { anomalies: [], summary: {} })
       
     } catch (error: any) {
       console.error('获取异常分析数据失败:', error)
-      const errorMessage = error.response?.data?.detail?.error || '获取异常分析数据失败'
+      let errorMessage = '获取异常分析数据失败'
+      
+      if (error.code === 'NETWORK_ERROR') {
+        errorMessage = '网络连接失败，请检查后端服务是否正常运行'
+      } else if (error.response?.status === 500) {
+        errorMessage = '服务器内部错误，请稍后重试'
+      } else if (error.response?.data?.detail?.error) {
+        errorMessage = error.response.data.detail.error
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       setAnomalyError(errorMessage)
+      setAnomalyData({ anomalies: [], summary: {} })
       toast.error(errorMessage)
     } finally {
       setAnomalyLoading(false)
@@ -147,28 +186,43 @@ export default function StatisticsPage() {
   /**
    * 获取设备列表
    */
-  const fetchDevices = async () => {
+  const fetchDevices = async (retryCount = 0) => {
     try {
       const response = await deviceService.getDevices({ page_size: 1000 }) // 获取所有设备
-      setDevices(response.items || [])
-    } catch (error) {
+      console.log('获取到的设备数据:', response)
+      setDevices(response.data || [])
+    } catch (error: any) {
       console.error('获取设备列表失败:', error)
       setDevices([]) // 确保设置为空数组
+      
+      // 如果是网络错误且重试次数少于3次，则重试
+      if (retryCount < 3 && (error.code === 'NETWORK_ERROR' || error.response?.status >= 500)) {
+        setTimeout(() => fetchDevices(retryCount + 1), 1000 * (retryCount + 1))
+      } else {
+        toast.error('获取设备列表失败，请刷新页面重试')
+      }
     }
   }
 
   /**
    * 获取分组列表
    */
-  const fetchGroups = async () => {
+  const fetchGroups = async (retryCount = 0) => {
     try {
-      if (user?.role === 'super_admin') {
-        const response = await groupService.getGroups({ page_size: 1000 }) // 获取所有分组
-        setGroups(response.items || [])
-      }
-    } catch (error) {
+      // 移除权限检查，所有用户都可以查看分组
+      const response = await groupService.getGroups({ page_size: 1000 }) // 获取所有分组
+      setGroups(response.data || [])
+      console.log('获取到的分组数据:', response.data)
+    } catch (error: any) {
       console.error('获取分组列表失败:', error)
       setGroups([]) // 确保设置为空数组
+      
+      // 如果是网络错误且重试次数少于3次，则重试
+      if (retryCount < 3 && (error.code === 'NETWORK_ERROR' || error.response?.status >= 500)) {
+        setTimeout(() => fetchGroups(retryCount + 1), 1000 * (retryCount + 1))
+      } else {
+        toast.error('获取分组列表失败，请刷新页面重试')
+      }
     }
   }
 
@@ -226,6 +280,94 @@ export default function StatisticsPage() {
     }
     return timeRangeMap[range as keyof typeof timeRangeMap] || range
   }
+  
+  /**
+   * 将时间范围转换为小时数
+   */
+  const timeRangeToHours = (range: string): number => {
+    switch (range) {
+      case '10m': return 0.17 // 10分钟
+      case '30m': return 0.5 // 30分钟
+      case '1h': return 1
+      case '24h': return 24
+      case '7d': return 168 // 7*24
+      case '30d': return 720 // 30*24
+      default: return 24
+    }
+  }
+  
+  /**
+   * 获取性能分析数据
+   */
+  const fetchPerformanceData = async () => {
+    setPerformanceLoading(true)
+    setPerformanceError(null)
+    
+    try {
+      const params = {
+        hours: timeRangeToHours(timeRange),
+        ...(selectedGroup !== 'all' && { group_id: parseInt(selectedGroup) })
+      }
+      
+      const response = await performanceService.getPerformanceOverview(params)
+      
+      if (response.success) {
+        setPerformanceData(response.data)
+      } else {
+        const errorMessage = response.message || '加载性能数据失败'
+        setPerformanceError(errorMessage)
+        toast.error(errorMessage)
+      }
+    } catch (error: any) {
+      console.error('获取性能概览失败:', error)
+      const errorMessage = error.response?.data?.detail?.error || error.response?.data?.message || error.message || '网络错误，请稍后重试'
+      setPerformanceError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setPerformanceLoading(false)
+    }
+  }
+  
+  /**
+   * 获取性能趋势数据
+   */
+  const fetchTrendsData = async () => {
+    try {
+      const params = {
+        hours: timeRangeToHours(timeRange),
+        interval: Math.max(1, Math.floor(timeRangeToHours(timeRange) / 24)), // 动态计算间隔
+        ...(selectedGroup !== 'all' && { group_id: parseInt(selectedGroup) }),
+        ...(selectedDevice !== 'all' && { device_id: parseInt(selectedDevice) })
+      }
+      
+      const response = await performanceService.getPerformanceTrends(params)
+      
+      if (response.success) {
+        setTrends(response.data?.trends || [])
+      } else {
+        const errorMessage = response.message || '加载趋势数据失败'
+        toast.error(errorMessage)
+      }
+    } catch (error: any) {
+      console.error('获取性能趋势数据失败:', error)
+      const errorMessage = error.response?.data?.detail?.error || error.response?.data?.message || error.message || '网络错误，请稍后重试'
+      toast.error(errorMessage)
+      setTrends([])
+    }
+  }
+  
+  /**
+   * 获取健康状态颜色和图标
+   */
+  const getHealthStatus = (score: number) => {
+    if (score >= 80) {
+      return { color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle, label: '健康' };
+    } else if (score >= 60) {
+      return { color: 'text-yellow-600', bg: 'bg-yellow-100', icon: AlertTriangle, label: '警告' };
+    } else {
+      return { color: 'text-red-600', bg: 'bg-red-100', icon: AlertTriangle, label: '严重' };
+    }
+  }
 
   /**
    * 计算总体统计
@@ -253,6 +395,7 @@ export default function StatisticsPage() {
       totalDevices
     }
   }
+
 
   /**
    * 准备图表数据
@@ -398,6 +541,8 @@ export default function StatisticsPage() {
   useEffect(() => {
     fetchStatistics()
     fetchAnomalies()
+    fetchPerformanceData()
+    fetchTrendsData()
   }, [selectedDevice, selectedGroup, timeRange])
 
   const overallStats = calculateOverallStats()
@@ -481,24 +626,22 @@ export default function StatisticsPage() {
                 </div>
 
                 {/* 分组选择 */}
-                {user?.role === 'super_admin' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">分组</label>
-                    <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">全部分组</SelectItem>
-                        {groups.map(group => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">分组</label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部分组</SelectItem>
+                      {groups.map(group => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {/* 设备选择 */}
                 <div className="space-y-2">
@@ -525,7 +668,20 @@ export default function StatisticsPage() {
           {error && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{error}</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setError(null)
+                    fetchStatistics()
+                  }}
+                  className="ml-4"
+                >
+                  重试
+                </Button>
+              </AlertDescription>
             </Alert>
           )}
 
@@ -615,6 +771,7 @@ export default function StatisticsPage() {
           <TabsTrigger value="details">详细数据</TabsTrigger>
           <TabsTrigger value="data">表格数据</TabsTrigger>
           <TabsTrigger value="anomalies">异常分析</TabsTrigger>
+          <TabsTrigger value="performance">性能分析</TabsTrigger>
         </TabsList>
 
         {/* 图表分析 */}
@@ -647,10 +804,11 @@ export default function StatisticsPage() {
                         height={80}
                         fontSize={12}
                       />
-                      <YAxis fontSize={12} />
+                      <YAxis yAxisId="left" fontSize={12} />
+                      <YAxis yAxisId="right" orientation="right" fontSize={12} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="total_points" fill="#3b82f6" name="数据点数" />
+                      <Bar dataKey="total_points" fill="#3b82f6" name="数据点数" yAxisId="left" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -688,7 +846,8 @@ export default function StatisticsPage() {
                         height={80}
                         fontSize={12}
                       />
-                      <YAxis fontSize={12} />
+                      <YAxis yAxisId="left" fontSize={12} />
+                      <YAxis yAxisId="right" orientation="right" fontSize={12} />
                       <Tooltip formatter={(value) => [value, '地址数量']} />
                       <Legend />
                       <Line 
@@ -697,6 +856,7 @@ export default function StatisticsPage() {
                         stroke="#10b981" 
                         strokeWidth={2}
                         name="地址数量"
+                        yAxisId="left"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -847,9 +1007,9 @@ export default function StatisticsPage() {
                         </div>
                       </div>
                       
-                      {item.last_collect_time && (
+                      {item.end_time && (
                         <div className="mt-3 text-sm text-muted-foreground">
-                          最后采集时间: {new Date(item.last_collect_time).toLocaleString()}
+                          最后采集时间: {new Date(item.end_time).toLocaleString()}
                         </div>
                       )}
                     </Card>
@@ -1022,12 +1182,25 @@ export default function StatisticsPage() {
           </div>
 
           {/* 异常错误提示 */}
-          {anomalyError && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{anomalyError}</AlertDescription>
-            </Alert>
-          )}
+            {anomalyError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{anomalyError}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setAnomalyError(null)
+                      fetchAnomalies()
+                    }}
+                    className="ml-4"
+                  >
+                    重试
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
           {/* 异常列表 */}
           <Card className="border-0 shadow-sm">
@@ -1273,6 +1446,356 @@ export default function StatisticsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* 性能分析标签页 */}
+        <TabsContent value="performance" className="space-y-4">
+          {/* 错误提示 */}
+            {performanceError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{performanceError}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setPerformanceError(null)
+                      fetchPerformanceData()
+                    }}
+                    className="ml-4"
+                  >
+                    重试
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+          {/* 性能概览卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">设备总数</CardTitle>
+                <Activity className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold text-gray-900">{performanceData?.summary?.total_devices || 0}</div>
+                )}
+                <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                  <span className="flex items-center">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                    健康 {performanceData?.summary?.healthy_devices || 0}
+                  </span>
+                  <span className="flex items-center">
+                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1"></div>
+                    警告 {performanceData?.summary?.warning_devices || 0}
+                  </span>
+                  <span className="flex items-center">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1"></div>
+                    严重 {performanceData?.summary?.critical_devices || 0}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">平均正常运行时间</CardTitle>
+                <TrendingUp className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold text-gray-900">{performanceData?.summary?.avg_uptime?.toFixed(1) || 0}%</div>
+                )}
+                <Progress 
+                  value={performanceData?.summary?.avg_uptime || 0} 
+                  className="h-1.5 mt-2" 
+                />
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">平均响应时间</CardTitle>
+                <Activity className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold text-gray-900">{performanceData?.summary?.avg_response_time?.toFixed(0) || 0}ms</div>
+                )}
+                <div className="flex items-center space-x-1 mt-1">
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    (performanceData?.summary?.avg_response_time || 0) <= 200 ? 'bg-green-500' : 
+                    (performanceData?.summary?.avg_response_time || 0) <= 500 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}></div>
+                  <p className="text-xs text-gray-500">
+                    {(performanceData?.summary?.avg_response_time || 0) <= 200 ? '响应良好' : 
+                     (performanceData?.summary?.avg_response_time || 0) <= 500 ? '响应一般' : '响应较慢'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">平均采集成功率</CardTitle>
+                <CheckCircle className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold text-gray-900">{performanceData?.summary?.avg_collection_rate?.toFixed(1) || 0}%</div>
+                )}
+                <Progress 
+                  value={performanceData?.summary?.avg_collection_rate || 0} 
+                  className="h-1.5 mt-2" 
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 性能详情 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 设备健康状态 */}
+            <Card className="border border-gray-200">
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <CardTitle className="flex items-center text-lg font-semibold text-gray-900">
+                  <Activity className="h-5 w-5 mr-2 text-gray-600" />
+                  设备健康状态
+                </CardTitle>
+                <CardDescription className="text-gray-500 text-sm mt-1">
+                  各设备的健康评分和状态分布
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : performanceData?.devices && performanceData.devices.length > 0 ? (
+                  <div className="space-y-4">
+                    {performanceData.devices.slice(0, 5).map((device: any) => {
+                      const status = getHealthStatus(device.health_score || 0);
+                      const StatusIcon = status.icon;
+                      return (
+                        <div key={device.device_id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-2 rounded-lg ${status.bg}`}>
+                              <StatusIcon className={`h-4 w-4 ${status.color}`} />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{device.device_name}</h4>
+                              <p className="text-xs text-gray-500">设备ID: {device.device_id}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">{device.health_score?.toFixed(0) || 0}</div>
+                            <Badge variant="outline" className={`text-xs ${status.color}`}>
+                              {status.label}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>暂无设备性能数据</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 性能趋势图表 */}
+            <Card className="border border-gray-200">
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <CardTitle className="flex items-center text-lg font-semibold text-gray-900">
+                  <TrendingUp className="h-5 w-5 mr-2 text-gray-600" />
+                  性能趋势分析
+                </CardTitle>
+                <CardDescription className="text-gray-500 text-sm mt-1">
+                  {getTimeRangeText(timeRange)}内的性能变化趋势
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {performanceLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : trends && trends.length > 0 ? (
+                  <div className="p-4">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={trends}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="timestamp" 
+                          tickFormatter={(value) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                          fontSize={11}
+                          stroke="#9ca3af"
+                        />
+                        <YAxis yAxisId="left" fontSize={11} stroke="#9ca3af" />
+                        <YAxis yAxisId="right" orientation="right" fontSize={11} stroke="#9ca3af" />
+                        <Tooltip 
+                          labelFormatter={(value) => new Date(value).toLocaleString('zh-CN')}
+                          formatter={(value: any, name: string) => [
+                            name === 'avg_response_time' ? `${value?.toFixed(0)}ms` : 
+                            name === 'avg_uptime' ? `${value?.toFixed(1)}%` : 
+                            `${value?.toFixed(1)}%`,
+                            name === 'avg_response_time' ? '平均响应时间' :
+                            name === 'avg_uptime' ? '平均正常运行时间' :
+                            '平均采集成功率'
+                          ]}
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <Legend fontSize={12} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="avg_response_time" 
+                          stroke="#f59e0b" 
+                          strokeWidth={2}
+                          name="平均响应时间(ms)"
+                          yAxisId="left"
+                          dot={false}
+                          activeDot={{ r: 4, stroke: '#f59e0b' }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="avg_uptime" 
+                          stroke="#10b981" 
+                          strokeWidth={2}
+                          name="平均正常运行时间(%)"
+                          yAxisId="right"
+                          dot={false}
+                          activeDot={{ r: 4, stroke: '#10b981' }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="avg_collection_rate" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          name="平均采集成功率(%)"
+                          yAxisId="right"
+                          dot={false}
+                          activeDot={{ r: 4, stroke: '#3b82f6' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[280px] flex flex-col items-center justify-center text-gray-400">
+                    <TrendingUp className="h-12 w-12 mb-3" />
+                    <p className="text-sm font-medium">暂无趋势数据</p>
+                    <p className="text-xs mt-1">请选择不同的时间范围或设备筛选条件</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 性能排行榜 */}
+          {performanceData?.summary && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 最佳性能设备 */}
+              <Card className="border border-gray-200">
+                <CardHeader className="border-b border-gray-100 pb-4">
+                  <CardTitle className="flex items-center text-lg font-semibold text-gray-900">
+                    <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                    最佳性能设备
+                  </CardTitle>
+                  <CardDescription className="text-gray-500 text-sm mt-1">
+                    健康评分最高的设备
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {performanceData.summary.top_performers && performanceData.summary.top_performers.length > 0 ? (
+                    <div className="space-y-4">
+                      {performanceData.summary.top_performers.map((device: any, index: number) => (
+                        <div key={device.device_id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-semibold">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{device.device_name}</h4>
+                              <p className="text-xs text-gray-500">设备ID: {device.device_id}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">{device.health_score?.toFixed(0)}</div>
+                            <p className="text-xs text-gray-500">健康评分</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-3" />
+                      <p className="text-sm font-medium">暂无数据</p>
+                      <p className="text-xs mt-1">当前筛选条件下没有找到设备</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 需要关注的设备 */}
+              <Card className="border border-gray-200">
+                <CardHeader className="border-b border-gray-100 pb-4">
+                  <CardTitle className="flex items-center text-lg font-semibold text-gray-900">
+                    <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
+                    需要关注的设备
+                  </CardTitle>
+                  <CardDescription className="text-gray-500 text-sm mt-1">
+                    健康评分较低的设备
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {performanceData.summary.poor_performers && performanceData.summary.poor_performers.length > 0 ? (
+                    <div className="space-y-4">
+                      {performanceData.summary.poor_performers.map((device: any, index: number) => (
+                        <div key={device.device_id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-sm font-semibold">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{device.device_name}</h4>
+                              <p className="text-xs text-gray-500">设备ID: {device.device_id}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">{device.health_score?.toFixed(0)}</div>
+                            <p className="text-xs text-gray-500">健康评分</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <AlertTriangle className="h-12 w-12 mx-auto mb-3" />
+                      <p className="text-sm font-medium">暂无数据</p>
+                      <p className="text-xs mt-1">所有设备运行状态良好</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
           </Tabs>

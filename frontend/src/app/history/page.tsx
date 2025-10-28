@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -83,6 +83,8 @@ export default function HistoryPage() {
   const [windowSize, setWindowSize] = useState(1000) // 固定渲染的数据点数量
   const [windowStart, setWindowStart] = useState(0) // 当前窗口起始位置
   const [allHistoryData, setAllHistoryData] = useState<HistoryData[]>([]) // 存储所有历史数据
+  
+
 
   /**
    * 初始化数据
@@ -101,7 +103,7 @@ export default function HistoryPage() {
       
       // 正确提取数据字段
       const groups = groupsData?.data || []
-      const devices = devicesData?.items || []
+      const devices = devicesData?.data || []
       
       console.log('提取的分组数据:', groups)
       console.log('提取的设备数据:', devices)
@@ -127,8 +129,12 @@ export default function HistoryPage() {
     return devices.filter(device => device.group_id === parseInt(selectedGroupId))
   }
 
+
+
   /**
    * 处理历史数据转换为图表数据
+   * @param data 历史数据数组
+   * @returns 包含chartData、dataKeys和addressMapping的对象
    */
   const processChartData = (data: HistoryData[]) => {
     console.log('processChartData 开始处理数据:', data.length, '条记录')
@@ -136,11 +142,14 @@ export default function HistoryPage() {
     
     if (data.length === 0) {
       console.log('数据为空，清空图表')
-      setChartData([])
-      setDataKeys([])
-      setAddressMapping({})
-      return
+      return {
+        chartData: [],
+        dataKeys: [],
+        addressMapping: {}
+      }
     }
+    
+
 
     // 按时间分组数据
     const timeGroups: { [key: string]: { [key: string]: number } } = {}
@@ -202,10 +211,12 @@ export default function HistoryPage() {
     //console.log('图表数据样本:', chartPoints.slice(0, 3))
     //console.log('数据键:', Array.from(addressSet))
 
-    setChartData(chartPoints)
-    // dataKeys 使用地址，但在图表显示时会通过 addressMapping 转换为显示名称
-    setDataKeys(Array.from(addressSet))
-    setAddressMapping(newAddressMapping)
+    // 返回处理结果对象
+    return {
+      chartData: chartPoints,
+      dataKeys: Array.from(addressSet),
+      addressMapping: newAddressMapping
+    }
   }
 
   /**
@@ -270,7 +281,10 @@ export default function HistoryPage() {
       setHistoryData(initialWindowData)
       
       // 处理图表数据
-      processChartData(initialWindowData)
+      const processed = processChartData(initialWindowData)
+      setChartData(processed.chartData)
+      setDataKeys(processed.dataKeys)
+      setAddressMapping(processed.addressMapping)
       
     } catch (error) {
       console.error('查询历史数据失败:', error)
@@ -350,16 +364,34 @@ export default function HistoryPage() {
     // 重置滑动窗口状态
     setWindowStart(0)
     setAllHistoryData([])
+
   }
 
   /**
    * 更新滑动窗口数据
    */
-  const updateWindowData = (start: number) => {
-    const windowData = allHistoryData.slice(start, start + windowSize)
+  const updateWindowData = useCallback(() => {
+    if (allHistoryData.length === 0) return
+    
+    const endIndex = Math.min(windowStart + windowSize, allHistoryData.length)
+    const windowData = allHistoryData.slice(windowStart, endIndex)
+    
     setHistoryData(windowData)
-    processChartData(windowData)
-  }
+    
+    // 重新处理图表数据
+    const processed = processChartData(windowData)
+    setChartData(processed.chartData)
+    setDataKeys(processed.dataKeys)
+    setAddressMapping(processed.addressMapping)
+    
+  }, [allHistoryData, windowStart, windowSize])
+
+  // 监听窗口位置和大小变化
+  React.useEffect(() => {
+    if (allHistoryData.length > 0) {
+      updateWindowData()
+    }
+  }, [windowStart, windowSize, updateWindowData])
 
   /**
    * 处理滑动条变化
@@ -367,7 +399,6 @@ export default function HistoryPage() {
   const handleSliderChange = (value: number[]) => {
     const newStart = value[0]
     setWindowStart(newStart)
-    updateWindowData(newStart)
   }
 
   /**
@@ -376,7 +407,6 @@ export default function HistoryPage() {
   const handleWindowSizeChange = (newSize: string) => {
     const size = parseInt(newSize)
     setWindowSize(size)
-    updateWindowData(windowStart)
   }
 
   /**
@@ -386,7 +416,6 @@ export default function HistoryPage() {
     const maxStart = Math.max(0, allHistoryData.length - windowSize)
     const newStart = Math.min(windowStart + Math.floor(windowSize / 2), maxStart)
     setWindowStart(newStart)
-    updateWindowData(newStart)
   }
 
   /**
@@ -395,7 +424,6 @@ export default function HistoryPage() {
   const moveWindowBackward = () => {
     const newStart = Math.max(0, windowStart - Math.floor(windowSize / 2))
     setWindowStart(newStart)
-    updateWindowData(newStart)
   }
 
   /**
@@ -507,6 +535,15 @@ export default function HistoryPage() {
   React.useEffect(() => {
     console.log('设备状态更新:', devices)
   }, [devices])
+
+  // 监听窗口数据变化，自动更新图表
+  React.useEffect(() => {
+    if (allHistoryData.length > 0) {
+      updateWindowData()
+    }
+  }, [allHistoryData, updateWindowData])
+
+
 
   const filteredDevices = getFilteredDevices()
 
@@ -896,15 +933,17 @@ export default function HistoryPage() {
           {/* 图表展示 - 优化版本 */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-                数据趋势图
-                {dataKeys.length > 0 && (
-                  <span className="text-sm font-normal text-muted-foreground ml-2">
-                    ({dataKeys.length} 条数据线)
-                  </span>
-                )}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                  数据趋势图
+                  {dataKeys.length > 0 && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      ({dataKeys.length} 条数据线)
+                    </span>
+                  )}
+                </CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
           {isLoading ? (
@@ -932,7 +971,7 @@ export default function HistoryPage() {
                     height={100}
                     interval={Math.max(0, Math.floor(chartData.length / 10))}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11, fill: '#666' }}
                     axisLine={{ stroke: '#e0e0e0' }}
                     tickLine={{ stroke: '#e0e0e0' }}

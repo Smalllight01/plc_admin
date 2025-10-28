@@ -94,10 +94,18 @@ export const userService = {
       queryParams.append('role', role);
     }
     
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<User>>>(
+    const response = await apiClient.get<ApiResponse<{users: User[], total: number, page: number, per_page: number}>>(
       `/api/users?${queryParams.toString()}`
     )
-    return response.data.data!
+    const backendData = response.data.data!
+    // 转换后端数据格式为前端期望的 PaginatedResponse 格式
+    return {
+      data: backendData.users,
+      total: backendData.total,
+      page: backendData.page,
+      per_page: backendData.per_page,
+      pages: Math.ceil(backendData.total / backendData.per_page)
+    }
   },
 
   /**
@@ -237,7 +245,7 @@ export const deviceService = {
       // 转换后端响应格式到前端期望的格式
       const backendData = response.data
       return {
-        items: backendData.devices || [],
+        data: backendData.devices || [],
         total: backendData.total || 0,
         page: backendData.page || 1,
         per_page: backendData.page_size || page_size,
@@ -245,7 +253,7 @@ export const deviceService = {
       }
     } catch (error) {
       console.error('获取设备列表失败:', error)
-      return { items: [], total: 0, page: 1, per_page: 10, pages: 0 }
+      return { data: [], total: 0, page: 1, per_page: 10, pages: 0 }
     }
   },
 
@@ -348,6 +356,31 @@ export const deviceService = {
  * 数据查询API服务
  */
 export const dataService = {
+  /**
+   * 获取数据点列表
+   * @param params 查询参数
+   * @returns 数据点列表
+   */
+  async getDataPoints(params: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    device_id?: number;
+    group_id?: number;
+  } = {}): Promise<any> {
+    const searchParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString())
+      }
+    })
+    
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/api/data/points?${searchParams.toString()}`
+    )
+    return response.data.data!
+  },
+
   /**
    * 获取实时数据
    * @param params 查询参数

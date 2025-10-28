@@ -2,10 +2,20 @@
 const nextConfig = {
   output: 'standalone',
   async rewrites() {
+    // 根据环境变量动态配置后端地址
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // 如果API URL是相对路径（如 /api），则不需要rewrites
+    // 因为Nginx会处理代理，直接返回空数组
+    if (apiUrl.startsWith('/')) {
+      return [];
+    }
+    
+    // 只有当API URL是完整URL时才进行rewrites
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: `${apiUrl}/api/:path*`,
       },
     ]
   },

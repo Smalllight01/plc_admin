@@ -251,18 +251,17 @@ export function RealtimeChart({
             </div>
           ) : (
             <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-              <LineChart
-                accessibilityLayer
-                data={chartData}
-                width="100%"
-                height={300}
-                margin={{
-                  top: 20,
-                  left: 12,
-                  right: 12,
-                  bottom: 40,
-                }}
-              >
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{
+                    top: 20,
+                    left: 12,
+                    right: 12,
+                    bottom: 40,
+                  }}
+                >
                   <CartesianGrid vertical={false} />
                   <XAxis
                     dataKey="time"
@@ -302,6 +301,7 @@ export function RealtimeChart({
                     )
                   })}
                 </LineChart>
+              </ResponsiveContainer>
             </ChartContainer>
           )}
         </div>

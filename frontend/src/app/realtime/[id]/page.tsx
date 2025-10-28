@@ -230,8 +230,20 @@ export default function DeviceDetailPage() {
 
   // 处理地址数据，合并配置和实时数据
   const processedAddresses = useMemo(() => {
-    const addresses = device?.addresses || []
-    return addresses.map(addr => ({
+    let addresses: any[] = []
+    if (device?.addresses) {
+      if (Array.isArray(device.addresses)) {
+        addresses = device.addresses
+      } else if (typeof device.addresses === 'string') {
+        try {
+          addresses = JSON.parse(device.addresses)
+        } catch (error) {
+          console.error('Failed to parse device addresses:', error)
+          addresses = []
+        }
+      }
+    }
+    return addresses.map((addr: any) => ({
       ...addr,
       currentValue: currentData[addr.address],
       previousValue: previousData[addr.address],
@@ -241,13 +253,13 @@ export default function DeviceDetailPage() {
 
   // 获取所有唯一的数据类型
   const availableTypes = useMemo(() => {
-    const types = new Set(processedAddresses.map(addr => addr.type).filter(Boolean))
-    return Array.from(types).sort()
+    const types = new Set(processedAddresses.map((addr: any) => addr.type).filter(Boolean))
+    return Array.from(types).sort() as string[]
   }, [processedAddresses])
 
   // 搜索和排序后的地址数据
   const filteredAndSortedAddresses = useMemo(() => {
-    let filtered = processedAddresses.filter(addr => {
+    let filtered = processedAddresses.filter((addr: any) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         addr.address.toLowerCase().includes(searchLower) ||
@@ -258,20 +270,20 @@ export default function DeviceDetailPage() {
 
     // 类型筛选
     if (filterType !== 'all') {
-      filtered = filtered.filter(addr => addr.type === filterType)
+      filtered = filtered.filter((addr: any) => addr.type === filterType)
     }
 
     // 状态筛选
     if (filterStatus !== 'all') {
       if (filterStatus === 'hasData') {
-        filtered = filtered.filter(addr => addr.hasData)
+        filtered = filtered.filter((addr: any) => addr.hasData)
       } else if (filterStatus === 'noData') {
-        filtered = filtered.filter(addr => !addr.hasData)
+        filtered = filtered.filter((addr: any) => !addr.hasData)
       }
     }
 
     // 排序
-    filtered.sort((a, b) => {
+    filtered.sort((a: any, b: any) => {
       let aValue: any
       let bValue: any
 
@@ -340,7 +352,7 @@ export default function DeviceDetailPage() {
   // 全选/取消全选
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedAddresses(new Set(filteredAndSortedAddresses.map(addr => addr.address)))
+      setSelectedAddresses(new Set(filteredAndSortedAddresses.map((addr: any) => addr.address)))
     } else {
       setSelectedAddresses(new Set())
     }
@@ -395,7 +407,6 @@ export default function DeviceDetailPage() {
     )
   }
 
-  const addresses = device.addresses || []
   // 处理当前设备的实时数据
   const currentDeviceData = realtimeData?.realtime_data?.find(
     (item: any) => item.device_id === parseInt(deviceId)
@@ -468,7 +479,7 @@ export default function DeviceDetailPage() {
                 <div>
                   <label className="text-xs text-muted-foreground">状态</label>
                   <div className="mt-1">
-                    <DeviceStatusBadge status={device.status} isConnected={device.is_connected} />
+                    <DeviceStatusBadge status={device.status || 'unknown'} isConnected={device.is_connected} />
                   </div>
                 </div>
                 <div>
@@ -485,7 +496,7 @@ export default function DeviceDetailPage() {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">分组</label>
-                  <p className="font-medium text-sm">{device.group_name || '未分组'}</p>
+                  <p className="font-medium text-sm">{device.group?.name || '未分组'}</p>
                 </div>
               </div>
               
@@ -498,8 +509,8 @@ export default function DeviceDetailPage() {
                       <span className="text-sm font-medium">采集统计:</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span>总点数: <span className="font-bold text-blue-600">{addresses.length}</span></span>
-                      <span>活跃: <span className="font-bold text-green-600">{addresses.filter((addr: any) => addr.name).length}</span></span>
+                      <span>总点数: <span className="font-bold text-blue-600">{processedAddresses.length}</span></span>
+                      <span>活跃: <span className="font-bold text-green-600">{processedAddresses.filter((addr: any) => addr.name).length}</span></span>
                       <span>有数据: <span className="font-bold text-orange-600">{Object.keys(currentData).length}</span></span>
                     </div>
                   </div>
@@ -574,7 +585,7 @@ export default function DeviceDetailPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">所有类型</SelectItem>
-                        {availableTypes.map(type => (
+                        {availableTypes.map((type: string) => (
                           <SelectItem key={type} value={type}>{type}</SelectItem>
                         ))}
                       </SelectContent>
@@ -692,12 +703,12 @@ export default function DeviceDetailPage() {
                                 if (selectedAddresses.size === paginatedAddresses.length) {
                                   // 取消选择当前页所有项
                                   const newSelected = new Set(selectedAddresses)
-                                  paginatedAddresses.forEach(addr => newSelected.delete(addr.address))
+                                  paginatedAddresses.forEach((addr: any) => newSelected.delete(addr.address))
                                   setSelectedAddresses(newSelected)
                                 } else {
                                   // 选择当前页所有项
                                   const newSelected = new Set(selectedAddresses)
-                                  paginatedAddresses.forEach(addr => newSelected.add(addr.address))
+                                  paginatedAddresses.forEach((addr: any) => newSelected.add(addr.address))
                                   setSelectedAddresses(newSelected)
                                 }
                               }}
@@ -713,7 +724,7 @@ export default function DeviceDetailPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedAddresses.map((addr) => (
+                        {paginatedAddresses.map((addr: any) => (
                           <TableRow key={addr.address}>
                             <TableCell>
                               <Checkbox
@@ -748,7 +759,7 @@ export default function DeviceDetailPage() {
                     </Table>
                   ) : viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-                      {paginatedAddresses.map((addr) => (
+                      {paginatedAddresses.map((addr: any) => (
                         <Card key={addr.address} className="relative">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
@@ -793,7 +804,7 @@ export default function DeviceDetailPage() {
                     /* 紧凑视图 - 最大化空间利用率 */
                     <div className="p-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-                        {paginatedAddresses.map((addr) => (
+                        {paginatedAddresses.map((addr: any) => (
                           <div key={addr.address} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
                             <div className="flex items-center justify-between mb-2">
                               <Checkbox
@@ -899,7 +910,7 @@ export default function DeviceDetailPage() {
               {showChart && selectedAddresses.size > 0 && (
                 <RealtimeChart
                   realtimeData={chartData}
-                  addresses={filteredAndSortedAddresses.filter(addr => selectedAddresses.has(addr.address))}
+                  addresses={filteredAndSortedAddresses.filter((addr: any) => selectedAddresses.has(addr.address))}
                   deviceName={device.name}
                   maxDataPoints={100}
                 />

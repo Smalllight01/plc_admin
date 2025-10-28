@@ -102,7 +102,7 @@ export default function SettingsPage() {
       }
     },
     staleTime: 0, // 数据立即过期
-    cacheTime: 0, // 不缓存数据
+    gcTime: 0, // 不缓存数据
     refetchOnMount: true, // 组件挂载时重新获取
     refetchOnWindowFocus: true, // 窗口聚焦时重新获取
   })

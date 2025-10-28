@@ -123,7 +123,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     
     try {
       await authService.changePassword({
-        current_password: currentPassword,
+        old_password: currentPassword,
         new_password: newPassword,
       })
       

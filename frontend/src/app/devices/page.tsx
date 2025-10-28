@@ -120,7 +120,7 @@ export default function DevicesPage() {
     queryFn: () => apiService.getGroups({ page: 1, page_size: 100 }),
   })
 
-  const devices = useMemo(() => devicesData?.items || [], [devicesData])
+  const devices = useMemo(() => devicesData?.data || [], [devicesData])
   const groups = useMemo(() => groupsData?.data || [], [groupsData])
   const isLoading_ = isLoading
 
@@ -229,8 +229,20 @@ export default function DevicesPage() {
       protocol: device.protocol,
       ip_address: device.ip_address,
       port: device.port,
-      addresses: device.addresses || [],
-      group_id: device.group_id,
+      addresses: (() => {
+        if (!device.addresses) return []
+        if (Array.isArray(device.addresses)) return device.addresses
+        if (typeof device.addresses === 'string') {
+          try {
+            return JSON.parse(device.addresses)
+          } catch (error) {
+            console.error('Failed to parse device addresses:', error)
+            return []
+          }
+        }
+        return []
+      })(),
+      group_id: device.group_id !== null ? device.group_id : 1,
       is_active: device.is_active,
       description: device.description || '',
     })
@@ -254,10 +266,16 @@ export default function DevicesPage() {
     if (editingDevice) {
       updateDeviceMutation.mutate({
         id: editingDevice.id,
-        data: formData,
+        data: {
+          ...formData,
+          addresses: JSON.stringify(formData.addresses),
+        },
       })
     } else {
-      createDeviceMutation.mutate(formData)
+      createDeviceMutation.mutate({
+        ...formData,
+        addresses: JSON.stringify(formData.addresses),
+      })
     }
   }
 
@@ -317,7 +335,7 @@ export default function DevicesPage() {
    * 过滤设备列表
    */
   const filteredDevices = useMemo(() => {
-    return devices.filter(device => {
+    return devices.filter((device: any) => {
       const matchesSearch = !searchTerm || 
         device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         device.ip_address.includes(searchTerm)
@@ -328,14 +346,14 @@ export default function DevicesPage() {
         device.status === statusFilter
       
       const matchesGroup = groupFilter === 'all' || 
-        device.group_id.toString() === groupFilter
+        (device.group_id !== null && device.group_id.toString() === groupFilter)
       
       return matchesSearch && matchesStatus && matchesGroup
     })
   }, [devices, searchTerm, statusFilter, groupFilter])
 
   return (
-    <AuthGuard requireOperator>
+    <AuthGuard requireAdmin>
       <MainLayout>
         <div className="w-full max-w-none p-6 space-y-6">
           {/* 页面标题 */}
@@ -457,7 +475,7 @@ export default function DevicesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部分组</SelectItem>
-                  {groups.map(group => (
+                  {groups.map((group: any) => (
                     <SelectItem key={group.id} value={group.id.toString()}>
                       {group.name}
                     </SelectItem>
@@ -555,7 +573,7 @@ export default function DevicesPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {getGroupName(device.group_id)}
+                              {device.group_id ? getGroupName(device.group_id) : '未知分组'}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -700,7 +718,7 @@ export default function DevicesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {groups.map(group => (
+                        {groups.map((group: any) => (
                           <SelectItem key={group.id} value={group.id.toString()}>
                             {group.name}
                           </SelectItem>

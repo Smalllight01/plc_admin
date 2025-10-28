@@ -1,0 +1,37 @@
+{
+  "name": "plc-admin-frontend",
+  "version": "1.0.0",
+  "description": "PLC管理系统前端可执行文件",
+  "main": "server.js",
+  "bin": "server.js",
+  "pkg": {
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist",
+    "assets": [
+      ".next/**/*",
+      "public/**/*",
+      "node_modules/next/dist/**/*",
+      "node_modules/@next/**/*",
+      "package.json"
+    ],
+    "scripts": [
+      "node_modules/next/dist/**/*.js",
+      ".next/**/*.js"
+    ],
+    "options": [
+      "--compress",
+      "--no-bytecode"
+    ]
+  },
+  "scripts": {
+    "pkg:build": "next build && pkg . --out-path dist",
+    "pkg:win": "next build && pkg . --targets node18-win-x64 --out-path dist",
+    "pkg:clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1",
+    "rimraf": "^5.0.5"
+  }
+}

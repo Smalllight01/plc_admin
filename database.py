@@ -449,12 +449,14 @@ class DatabaseManager:
             return statistics
             
         except Exception as e:
-            logger.error(f"查询设备 {device_id} 统计数据失败: {e}")
+            logger.error(f"查询统计数据失败: {e}")
+            # 返回空的统计数据结构，确保前端能正常处理
             return {
                 'total_points': 0,
                 'addresses': {},
                 'start_time': start_time.isoformat() if start_time else None,
                 'end_time': end_time.isoformat() if end_time else None,
+                'success_rate': 0.0,
                 'error': str(e)
             }
     
@@ -698,7 +700,24 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"查询异常数据失败: {e}")
-            return {'anomalies': [], 'summary': {'total_anomalies': 0, 'anomaly_types': {}}}
+            # 返回空的异常数据结构，确保前端能正常处理
+            return {
+                'anomalies': [], 
+                'summary': {
+                    'total_anomalies': 0, 
+                    'anomaly_types': {
+                        'data_interruption': 0,
+                        'value_spike': 0,
+                        'out_of_range': 0,
+                        'communication_error': 0
+                    }
+                },
+                'time_range': {
+                    'start': start_time.isoformat() if start_time else None,
+                    'end': end_time.isoformat() if end_time else None
+                },
+                'error': str(e)
+            }
         
         try:
             # 确保时间为上海时区

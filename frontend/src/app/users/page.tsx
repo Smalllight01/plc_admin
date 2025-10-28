@@ -312,7 +312,7 @@ export default function UsersPage() {
     }
   }
 
-  const users = usersData?.users || []
+  const users = usersData?.data || []
   const isLoading_ = isLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   return (

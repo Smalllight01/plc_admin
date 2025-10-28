@@ -24,6 +24,7 @@ from api.device_routes import router as device_router
 from api.data_routes import router as data_router
 from api.settings_routes import router as settings_router
 from api.dashboard_routes import router as dashboard_router
+from api.performance_routes import router as performance_router
 import logging
 import os
 from datetime import datetime
@@ -64,9 +65,13 @@ def create_app(plc_collector=None):
     )
     
     # 配置CORS中间件
+    # 从环境变量获取允许的源，如果没有则使用默认值
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.23:3000').split(',')
+    cors_origins.extend(["http://zyg.yunziheng.xyz:3000", "https://zyg.yunziheng.xyz:3000"])
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000","http://192.168.1.23:3000"],
+        allow_origins=cors_origins,
         allow_origin_regex=r"http://192\.168\.1\.[0-9]+:3000",
         allow_credentials=True,
         allow_methods=["*"],
@@ -93,6 +98,7 @@ def create_app(plc_collector=None):
     app.include_router(data_router)
     app.include_router(settings_router)
     app.include_router(dashboard_router)
+    app.include_router(performance_router)
 
     return app
 

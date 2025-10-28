@@ -1,0 +1,88 @@
+# Git相关
+.git
+.gitignore
+
+# Python相关
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+build
+develop-eggs
+dist
+downloads
+eggs
+.eggs
+lib
+lib64
+parts
+sdist
+var
+wheels
+*.egg-info
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv
+env
+ENV
+.venv
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE相关
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 日志文件
+logs
+*.log
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 临时文件
+.tmp
+temp
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+
+# Node.js相关（前端目录会有自己的.dockerignore）
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 前端构建产物
+frontend/dist
+frontend/.next
+frontend/out
+
+# 测试相关
+.coverage
+.pytest_cache
+.tox
+
+# 文档
+README.md
+*.md
+docs
+
+# Docker相关
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 其他
+.env.example

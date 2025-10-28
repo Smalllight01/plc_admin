@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Database,
   Activity,
+  TrendingUp,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -71,6 +72,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       href: '/statistics',
       icon: BarChart3,
       description: '数据分析和统计',
+    },
+    {
+      title: '性能分析',
+      href: '/performance',
+      icon: TrendingUp,
+      description: '设备性能监控和分析',
     },
     {
       title: '用户管理',
