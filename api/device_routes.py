@@ -15,7 +15,17 @@ from sqlalchemy.exc import IntegrityError
 from auth import get_current_user, get_admin_user, get_super_admin_user, check_group_permission, check_admin_permission
 from database import db_manager
 from models import Device, Group, CollectLog
-from plc_collector import PLCCollector
+try:
+    from plc_collector import PLCCollector
+    PLC_COLLECTOR_AVAILABLE = True
+except ImportError:
+    PLC_COLLECTOR_AVAILABLE = False
+
+try:
+    from simple_collector import simple_collector
+    SIMPLE_COLLECTOR_AVAILABLE = True
+except ImportError:
+    SIMPLE_COLLECTOR_AVAILABLE = False
 
 # 创建路由器
 router = APIRouter(prefix="/api", tags=["devices"])
@@ -199,8 +209,10 @@ async def create_device(
             db.commit()
             db.refresh(device)
             
-            # 如果PLC采集器存在，重新加载设备配置
-            if plc_collector_instance:
+            # 如果采集器存在，重新加载设备配置
+            if SIMPLE_COLLECTOR_AVAILABLE:
+                simple_collector.reload_devices()
+            elif PLC_COLLECTOR_AVAILABLE and plc_collector_instance:
                 plc_collector_instance.reload_devices()
             
             return {
@@ -265,8 +277,10 @@ async def update_device(
             db.commit()
             db.refresh(device)
             
-            # 如果PLC采集器存在，重新加载设备配置
-            if plc_collector_instance:
+            # 如果采集器存在，重新加载设备配置
+            if SIMPLE_COLLECTOR_AVAILABLE:
+                simple_collector.reload_devices()
+            elif PLC_COLLECTOR_AVAILABLE and plc_collector_instance:
                 plc_collector_instance.reload_devices()
             
             return {
@@ -314,8 +328,10 @@ async def delete_device(
             db.delete(device)
             db.commit()
             
-            # 如果PLC采集器存在，重新加载设备配置
-            if plc_collector_instance:
+            # 如果采集器存在，重新加载设备配置
+            if SIMPLE_COLLECTOR_AVAILABLE:
+                simple_collector.reload_devices()
+            elif PLC_COLLECTOR_AVAILABLE and plc_collector_instance:
                 plc_collector_instance.reload_devices()
             
             return {'message': '设备删除成功'}
@@ -366,8 +382,11 @@ async def get_device_status(
                 'connection_status': 'unknown'
             }
             
-            # 如果PLC采集器存在，获取实时连接状态
-            if plc_collector_instance:
+            # 如果采集器存在，获取实时连接状态
+            if SIMPLE_COLLECTOR_AVAILABLE:
+                connection_status = simple_collector.get_device_status(device_id)
+                status_info.update(connection_status)
+            elif PLC_COLLECTOR_AVAILABLE and plc_collector_instance:
                 connection_status = plc_collector_instance.get_device_status(device_id)
                 status_info['connection_status'] = connection_status
             
@@ -382,6 +401,37 @@ async def get_device_status(
         )
     except Exception as e:
         logger.error(f"获取设备状态异常: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={'error': '服务器内部错误', 'code': 'INTERNAL_ERROR'}
+        )
+
+@router.get("/devices/protocol-info")
+async def get_protocol_info(
+    current_user: dict = Depends(get_current_user)
+):
+    """获取协议信息"""
+    try:
+        if SIMPLE_COLLECTOR_AVAILABLE:
+            protocol_info = simple_collector.get_protocol_info()
+        elif PLC_COLLECTOR_AVAILABLE and plc_collector_instance:
+            protocol_info = plc_collector_instance.get_protocol_info()
+        else:
+            protocol_info = {
+                'modbus_available': False,
+                'omron_available': False,
+                'siemens_available': False,
+                'supported_protocols': [],
+                'total_protocols': 0
+            }
+
+        return {
+            'success': True,
+            'data': protocol_info
+        }
+
+    except Exception as e:
+        logger.error(f"获取协议信息异常: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={'error': '服务器内部错误', 'code': 'INTERNAL_ERROR'}

@@ -72,28 +72,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* 背景装饰元素 */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-accent/10 to-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl animate-float"></div>
+      </div>
+
+      <div className="max-w-md w-full relative z-10">
+        {/* 登录标题 */}
+        <div className="text-center mb-10 animate-slide-down">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-primary-dark rounded-3xl shadow-neumorphic-lg mb-6 hover:shadow-neumorphic-xl transition-all duration-300 hover:scale-102">
+            <LogIn className="w-10 h-10 text-primary-foreground" />
+          </div>
+          <h1 className="text-4xl font-bold gradient-text mb-3">
             PLC采集平台
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground text-lg font-medium">
             请登录您的账户以继续
           </p>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">用户登录</CardTitle>
-            <CardDescription className="text-center">
+
+        {/* 登录表单 */}
+        <Card className="neumorphic-card p-8 animate-scale-in shadow-neumorphic-lg">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl font-bold gradient-text">用户登录</CardTitle>
+            <CardDescription className="text-muted-foreground text-base font-medium">
               输入您的用户名和密码
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">用户名</Label>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="username" className="text-base font-semibold">用户名</Label>
                 <Input
                   id="username"
                   type="text"
@@ -103,11 +115,12 @@ export default function LoginPage() {
                   disabled={isLoading}
                   autoComplete="username"
                   required
+                  className="h-12 text-base"
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">密码</Label>
+
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-base font-semibold">密码</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -118,50 +131,67 @@ export default function LoginPage() {
                     disabled={isLoading}
                     autoComplete="current-password"
                     required
-                    className="pr-10"
+                    className="h-12 text-base pr-12"
                   />
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="neumorphic"
                     size="icon"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-500" />
+                      <EyeOff className="h-4 w-4" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-500" />
+                      <Eye className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
               </div>
-              
+
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-12 text-base font-bold shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:-translate-y-0.5"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
                     <span>登录中...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <LogIn className="h-4 w-4" />
+                  <div className="flex items-center space-x-3">
+                    <LogIn className="h-5 w-5" />
                     <span>登录</span>
                   </div>
                 )}
               </Button>
             </form>
-            
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <p>默认管理员账户：</p>
-              <p>用户名：admin，密码：admin123</p>
+
+            {/* 默认账户提示 */}
+            <div className="mt-8 p-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+              <div className="text-center">
+                <p className="text-sm font-semibold text-foreground mb-2">默认管理员账户：</p>
+                <div className="bg-background/80 rounded-xl p-3 border border-border/50">
+                  <p className="text-sm text-muted-foreground">
+                    用户名：<span className="font-mono font-bold text-primary">admin</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    密码：<span className="font-mono font-bold text-primary">admin123</span>
+                  </p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* 底部装饰 */}
+        <div className="text-center mt-8 animate-fade-in">
+          <p className="text-xs text-muted-foreground">
+            © 2024 PLC数据采集平台 · 扁平化拟物风格设计
+          </p>
+        </div>
       </div>
     </div>
   )

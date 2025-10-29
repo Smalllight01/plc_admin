@@ -22,12 +22,16 @@ export function MainLayout({ children }: MainLayoutProps) {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768
+      const tablet = window.innerWidth < 1024
+
       setIsMobile(mobile)
-      
-      // 在移动端默认收起侧边栏
-      if (mobile) {
+
+      // 在移动端和平板端默认收起侧边栏
+      if (mobile || tablet) {
         setSidebarCollapsed(true)
         setMobileMenuOpen(false)
+      } else {
+        setSidebarCollapsed(false)
       }
     }
 
@@ -36,7 +40,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
     // 监听窗口大小变化
     window.addEventListener('resize', checkScreenSize)
-    
+
     return () => {
       window.removeEventListener('resize', checkScreenSize)
     }
@@ -63,11 +67,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="h-screen flex overflow-hidden bg-background">
       {/* 移动端遮罩层 */}
       {isMobile && mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-md transition-opacity"
           onClick={closeMobileMenu}
         />
       )}
@@ -75,7 +79,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* 侧边栏 */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out',
           'md:relative md:translate-x-0',
           isMobile
             ? mobileMenuOpen
@@ -96,8 +100,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         <Header onMenuClick={toggleSidebar} />
 
         {/* 主内容 */}
-        <main className="flex-1 overflow-auto bg-gradient-to-br from-gray-50/50 to-blue-50/50">
-          <div className="h-full">
+        <main className="flex-1 overflow-auto custom-scrollbar">
+          <div className="h-full bg-gradient-to-br from-background via-background to-muted/20">
             {children}
           </div>
         </main>

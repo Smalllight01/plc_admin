@@ -16,25 +16,29 @@ try:
     import clr
     # 确保 HslCommunication.dll 在 Python 的搜索路径中
     clr.AddReference(r'HslCommunication')
-    
+
     # 导入需要的命名空间和类
     from HslCommunication.Profinet.Omron import OmronFinsNet, OmronPlcType
     from HslCommunication.Profinet.Siemens import SiemensS7Net, SiemensPLCS
+    from HslCommunication.ModBus import ModbusTcpNet, ModbusRtuOverTcp, ModbusRtu
     from HslCommunication.Core import DataFormat
     from HslCommunication.Core.Pipe import PipeTcpNet
-    
+
     CLR_AVAILABLE = True
-    logger.info("CLR和HslCommunication库加载成功")
+    logger.info("CLR和HslCommunication库加载成功（包含Modbus支持）")
 except Exception as e:
     logger.error(f"CLR或HslCommunication库加载失败: {e}")
     logger.error("请确保已安装Mono运行时和HslCommunication.dll")
     CLR_AVAILABLE = False
-    
+
     # 定义占位符类以避免导入错误
     class OmronFinsNet: pass
     class OmronPlcType: pass
     class SiemensS7Net: pass
     class SiemensPLCS: pass
+    class ModbusTcpNet: pass
+    class ModbusRtuOverTcp: pass
+    class ModbusRtu: pass
     class DataFormat: pass
     class PipeTcpNet: pass
 
@@ -43,6 +47,10 @@ from database import db_manager
 from models import Device, CollectLog
 import json
 import os
+
+# 不再使用新协议采集器
+PROTOCOL_COLLECTOR_AVAILABLE = False
+logger.info("使用原始采集器（已扩展Modbus支持）")
 
 class PLCConnection:
     """PLC连接类"""
@@ -66,32 +74,56 @@ class PLCConnection:
                 return
                 
             plc_type_lower = self.device.plc_type.lower()
-            
-            if 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
+
+            # Modbus协议判断
+            if any(modbus_type in plc_type_lower for modbus_type in [
+                'modbus', 'mb_', 'mbtcp', 'mbrtu', 'mb-rtu'
+            ]):
+                if 'tcp' in plc_type_lower and 'rtu' in plc_type_lower:
+                    # Modbus RTU over TCP
+                    self.plc = ModbusRtuOverTcp()
+                    logger.info(f"创建Modbus RTU over TCP客户端: {self.device.name}")
+                elif 'rtu' in plc_type_lower:
+                    # Modbus RTU (串口)
+                    self.plc = ModbusRtu()
+                    logger.info(f"创建Modbus RTU客户端: {self.device.name}")
+                else:
+                    # Modbus TCP
+                    self.plc = ModbusTcpNet()
+                    logger.info(f"创建Modbus TCP客户端: {self.device.name}")
+
+                # Modbus设备直接设置IP和端口，不需要通信管道
+                self.plc.IpAddress = self.device.ip_address
+                self.plc.Port = self.device.port
+
+            elif 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
                 self.plc = OmronFinsNet()
                 self.plc.PlcType = OmronPlcType.CSCJ
                 self.plc.DA2 = 0
                 self.plc.ReceiveUntilEmpty = False
                 self.plc.ByteTransform.DataFormat = DataFormat.CDAB
                 self.plc.ByteTransform.IsStringReverseByteWord = True
-                
-            elif 'siemens' in plc_type_lower or '西门子' in plc_type_lower:
-                self.plc = SiemensS7Net(SiemensPLCS.S1200)
-                self.plc.ByteTransform.DataFormat = DataFormat.DCBA
-                
-            else:
-                # 默认使用欧姆龙
-                logger.warning(f"未知的PLC型号 {self.device.plc_type}，使用默认欧姆龙配置")
-                self.plc = OmronFinsNet()
-                self.plc.PlcType = OmronPlcType.CSCJ
-            
-            # 设置通信管道
-            if self.device.protocol.lower() == 'tcp':
+
+                # 设置通信管道
                 pipe_tcp_net = PipeTcpNet(self.device.ip_address, self.device.port)
-                # 使用默认配置，稍后会在PLCCollector中更新
                 pipe_tcp_net.ConnectTimeOut = config.PLC_CONNECT_TIMEOUT
                 pipe_tcp_net.ReceiveTimeOut = config.PLC_RECEIVE_TIMEOUT
                 self.plc.CommunicationPipe = pipe_tcp_net
+
+            elif 'siemens' in plc_type_lower or '西门子' in plc_type_lower:
+                self.plc = SiemensS7Net(SiemensPLCS.S1200)
+                self.plc.ByteTransform.DataFormat = DataFormat.DCBA
+
+                # 西门子S7直接设置IP和端口
+                self.plc.IpAddress = self.device.ip_address
+                self.plc.Port = self.device.port
+
+            else:
+                # 默认使用Modbus TCP（比欧姆龙更通用）
+                logger.warning(f"未知的PLC型号 {self.device.plc_type}，使用默认Modbus TCP配置")
+                self.plc = ModbusTcpNet()
+                self.plc.IpAddress = self.device.ip_address
+                self.plc.Port = self.device.port
             
             logger.info(f"PLC实例创建成功: {self.device.name} ({self.device.plc_type})")
             
@@ -106,22 +138,23 @@ class PLCConnection:
                 if not self.plc:
                     self.last_error = "PLC实例未创建"
                     return False
-                
-                connect_result = self.plc.ConnectServer()
-                if connect_result.IsSuccess:
-                    self.is_connected = True
-                    self.last_error = None
-                    logger.info(f"PLC连接成功: {self.device.name}")
-                    return True
-                else:
+
+                # 设置连接超时，避免长时间阻塞
+                connect_thread = threading.Thread(target=self._connect_sync)
+                connect_thread.daemon = True
+                connect_thread.start()
+
+                # 等待连接完成，最多等待10秒
+                connect_thread.join(timeout=10)
+
+                if connect_thread.is_alive():
                     self.is_connected = False
-                    self.last_error = connect_result.Message
-                    logger.error(f"PLC连接失败 {self.device.name}: {connect_result.Message}")
-                    # 记录通信异常到InfluxDB
-                    from database import db_manager
-                    db_manager.write_communication_error(self.device.id, self.device.name, connect_result.Message)
+                    self.last_error = "连接超时"
+                    logger.error(f"PLC连接超时 {self.device.name}")
                     return False
-                    
+
+                return self.is_connected
+
             except Exception as e:
                 self.is_connected = False
                 self.last_error = str(e)
@@ -130,6 +163,27 @@ class PLCConnection:
                 from database import db_manager
                 db_manager.write_communication_error(self.device.id, self.device.name, str(e))
                 return False
+
+    def _connect_sync(self):
+        """同步连接方法"""
+        try:
+            connect_result = self.plc.ConnectServer()
+            if connect_result.IsSuccess:
+                self.is_connected = True
+                self.last_error = None
+                logger.info(f"PLC连接成功: {self.device.name}")
+            else:
+                self.is_connected = False
+                self.last_error = connect_result.Message
+                logger.error(f"PLC连接失败 {self.device.name}: {connect_result.Message}")
+                from database import db_manager
+                db_manager.write_communication_error(self.device.id, self.device.name, connect_result.Message)
+        except Exception as e:
+            self.is_connected = False
+            self.last_error = str(e)
+            logger.error(f"PLC连接异常 {self.device.name}: {e}")
+            from database import db_manager
+            db_manager.write_communication_error(self.device.id, self.device.name, str(e))
     
     def disconnect(self):
         """断开PLC连接"""
@@ -145,10 +199,35 @@ class PLCConnection:
     def update_timeouts(self, connect_timeout: int, receive_timeout: int):
         """更新连接和接收超时配置"""
         try:
-            if self.plc and hasattr(self.plc, 'CommunicationPipe') and self.plc.CommunicationPipe:
-                self.plc.CommunicationPipe.ConnectTimeOut = connect_timeout
-                self.plc.CommunicationPipe.ReceiveTimeOut = receive_timeout
-                logger.info(f"更新PLC超时配置 {self.device.name}: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
+            if not self.plc:
+                return
+
+            plc_type_lower = self.device.plc_type.lower()
+
+            # Modbus设备直接设置超时
+            if any(modbus_type in plc_type_lower for modbus_type in [
+                'modbus', 'mb_', 'mbtcp', 'mbrtu', 'mb-rtu'
+            ]):
+                if hasattr(self.plc, 'ConnectTimeOut'):
+                    self.plc.ConnectTimeOut = connect_timeout
+                if hasattr(self.plc, 'ReceiveTimeOut'):
+                    self.plc.ReceiveTimeOut = receive_timeout
+
+            # 欧姆龙设备通过通信管道设置超时
+            elif 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
+                if hasattr(self.plc, 'CommunicationPipe') and self.plc.CommunicationPipe:
+                    self.plc.CommunicationPipe.ConnectTimeOut = connect_timeout
+                    self.plc.CommunicationPipe.ReceiveTimeOut = receive_timeout
+
+            # 西门子设备直接设置超时
+            elif 'siemens' in plc_type_lower or '西门子' in plc_type_lower:
+                if hasattr(self.plc, 'ConnectTimeOut'):
+                    self.plc.ConnectTimeOut = connect_timeout
+                if hasattr(self.plc, 'ReceiveTimeOut'):
+                    self.plc.ReceiveTimeOut = receive_timeout
+
+            logger.info(f"更新PLC超时配置 {self.device.name}: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
+
         except Exception as e:
             logger.error(f"更新PLC超时配置失败 {self.device.name}: {e}")
     
@@ -235,24 +314,40 @@ class PLCConnection:
                 return {addr: None for addr in addresses}, False
 
 class PLCCollector:
-    """PLC数据采集器"""
-    
+    """PLC数据采集器（兼容原有接口）"""
+
     def __init__(self):
         self.connections: Dict[int, PLCConnection] = {}
-        self.scheduler = BackgroundScheduler()
+        # 配置调度器，明确设置线程池大小和其他选项
+        job_defaults = {
+            'coalesce': True,         # 合并多个任务为一个
+            'max_instances': 1,      # 每个任务最多1个实例
+            'misfire_grace_time': 30 # 允许30秒的延迟执行
+        }
+        self.scheduler = BackgroundScheduler(job_defaults=job_defaults)
         self.is_running = False
         self._lock = threading.Lock()
+        self._collect_lock = threading.RLock()  # 使用可重入锁防止并发采集
         self.current_settings = None
-        
-        # 检查CLR环境是否可用
-        if not globals().get('CLR_AVAILABLE', False):
-            logger.error("CLR环境不可用，PLC采集功能将被禁用")
-            logger.error("请安装Mono运行时并确保HslCommunication.dll可用")
-            logger.error("系统将继续运行，但PLC采集功能不可用")
-            self.clr_available = False
+
+        # 检查是否使用新的协议采集器
+        self.use_new_protocol_collector = PROTOCOL_COLLECTOR_AVAILABLE
+
+        if self.use_new_protocol_collector:
+            # 使用新的协议采集器
+            self.protocol_collector = ProtocolCollector()
+            logger.info("使用新的统一协议采集器")
         else:
-            self.clr_available = True
-            logger.info("CLR环境正常，PLC采集功能可用")
+            # 使用原有的CLR采集器
+            # 检查CLR环境是否可用
+            if not globals().get('CLR_AVAILABLE', False):
+                logger.error("CLR环境不可用，PLC采集功能将被禁用")
+                logger.error("请安装Mono运行时并确保HslCommunication.dll可用")
+                logger.error("系统将继续运行，但PLC采集功能不可用")
+                self.clr_available = False
+            else:
+                self.clr_available = True
+                logger.info("CLR环境正常，PLC采集功能可用")
     
     def _load_system_settings(self) -> dict:
         """加载系统设置"""
@@ -283,42 +378,57 @@ class PLCCollector:
         if self.is_running:
             logger.warning("PLC采集服务已在运行")
             return
-        
-        if not self.clr_available:
-            logger.warning("CLR环境不可用，PLC采集服务无法启动")
-            logger.warning("系统将继续运行，但PLC采集功能不可用")
-            return
-        
-        logger.info("启动PLC采集服务")
-        
-        # 加载系统设置
-        self.current_settings = self._load_system_settings()
-        
-        # 加载设备配置
-        self._load_devices()
-        
-        # 启动数据采集定时任务
-        collect_interval = self.current_settings.get('plc_collect_interval', config.PLC_COLLECT_INTERVAL)
-        self.scheduler.add_job(
-            func=self._collect_all_devices,
-            trigger="interval",
-            seconds=collect_interval,
-            id='plc_collect_job'
-        )
-        
-        # 启动数据清理定时任务（每天凌晨2点执行）
-        self.scheduler.add_job(
-            func=self._cleanup_old_data,
-            trigger="cron",
-            hour=2,
-            minute=0,
-            id='data_cleanup_job'
-        )
-        
-        self.scheduler.start()
-        self.is_running = True
-        
-        logger.info(f"PLC采集服务启动成功，采集间隔: {collect_interval}秒，数据清理任务已启动")
+
+        if self.use_new_protocol_collector:
+            # 使用新的协议采集器
+            logger.info("启动统一协议采集服务")
+            self.protocol_collector.start()
+            self.is_running = True
+        else:
+            # 使用原有的CLR采集器
+            if not self.clr_available:
+                logger.warning("CLR环境不可用，PLC采集服务无法启动")
+                logger.warning("系统将继续运行，但PLC采集功能不可用")
+                return
+
+            logger.info("启动PLC采集服务（传统CLR方式）")
+
+            # 加载系统设置
+            self.current_settings = self._load_system_settings()
+
+            # 加载设备配置
+            self._load_devices()
+
+            # 启动数据采集定时任务
+            collect_interval = self.current_settings.get('plc_collect_interval', config.PLC_COLLECT_INTERVAL)
+            logger.info(f"添加采集任务，间隔: {collect_interval}秒")
+            self.scheduler.add_job(
+                func=self._collect_all_devices,
+                trigger="interval",
+                seconds=collect_interval,
+                id='plc_collect_job',
+                max_instances=1,          # 最多同时运行1个实例
+                coalesce=True,            # 合并错过的任务
+                misfire_grace_time=30,    # 允许30秒的延迟执行
+                jitter=5                  # 添加5秒随机抖动避免重复执行
+            )
+
+            # 启动数据清理定时任务（每天凌晨2点执行）
+            self.scheduler.add_job(
+                func=self._cleanup_old_data,
+                trigger="cron",
+                hour=2,
+                minute=0,
+                id='data_cleanup_job',
+                max_instances=1,          # 最多同时运行1个实例
+                coalesce=True,            # 合并错过的任务
+                misfire_grace_time=300    # 允许5分钟的延迟执行
+            )
+
+            self.scheduler.start()
+            self.is_running = True
+
+            logger.info(f"PLC采集服务启动成功，采集间隔: {collect_interval}秒，数据清理任务已启动")
     
     def reload_settings(self):
         """重新加载系统设置并应用配置"""
@@ -362,7 +472,10 @@ class PLCCollector:
                 func=self._collect_all_devices,
                 trigger="interval",
                 seconds=new_interval,
-                id='plc_collect_job'
+                id='plc_collect_job',
+                max_instances=1,          # 最多同时运行1个实例
+                coalesce=True,            # 合并错过的任务
+                misfire_grace_time=30     # 允许30秒的延迟执行
             )
         
         # 如果最大并发连接数发生变化，重新加载设备
@@ -376,21 +489,39 @@ class PLCCollector:
         """停止采集服务"""
         if not self.is_running:
             return
-        
-        logger.info("停止PLC采集服务")
-        
-        # 停止定时任务
-        if self.scheduler.running:
-            self.scheduler.shutdown()
-        
-        # 断开所有连接
-        with self._lock:
-            for connection in self.connections.values():
-                connection.disconnect()
-            self.connections.clear()
-        
-        self.is_running = False
-        logger.info("PLC采集服务已停止")
+
+        if self.use_new_protocol_collector:
+            # 使用新的协议采集器
+            logger.info("停止统一协议采集服务")
+            self.protocol_collector.stop()
+            self.is_running = False
+        else:
+            # 使用原有的CLR采集器
+            logger.info("停止PLC采集服务（传统CLR方式）")
+
+            # 停止定时任务
+            try:
+                if self.scheduler.running:
+                    # 等待所有任务完成再关闭
+                    self.scheduler.shutdown(wait=True)
+            except Exception as e:
+                logger.error(f"停止调度器时出错: {e}")
+                try:
+                    self.scheduler.shutdown(wait=False)
+                except:
+                    pass
+
+            # 断开所有连接
+            with self._lock:
+                for connection in self.connections.values():
+                    try:
+                        connection.disconnect()
+                    except Exception as e:
+                        logger.error(f"断开连接时出错: {e}")
+                self.connections.clear()
+
+            self.is_running = False
+            logger.info("PLC采集服务已停止")
     
     def _load_devices(self):
         """加载设备配置（支持最大并发连接数限制）"""
@@ -471,10 +602,20 @@ class PLCCollector:
     
     def _collect_all_devices(self):
         """采集所有设备数据"""
+        start_time = time.time()
+
+        # 使用锁防止并发执行
+        logger.debug("尝试获取采集锁")
+        if not self._collect_lock.acquire(blocking=False):
+            logger.warning("采集任务正在执行，跳过本次采集")
+            return
+
         try:
+            logger.info("开始采集所有设备数据")
+
             with db_manager.get_db() as db:
                 devices = db.query(Device).filter(Device.is_active == True).all()
-                
+
                 # 在会话内获取设备数据，避免会话外访问
                 device_data = []
                 for device in devices:
@@ -483,19 +624,49 @@ class PLCCollector:
                         'name': device.name,
                         'addresses': device.addresses
                     })
-            
+
+            if not device_data:
+                logger.debug("没有活跃设备需要采集")
+                return
+
             # 在会话外进行数据采集
+            success_count = 0
             for data in device_data:
-                # 重新创建简化的Device对象用于采集
-                device_obj = Device(
-                    id=data['id'],
-                    name=data['name'],
-                    addresses=data['addresses']
-                )
-                self._collect_device_data(device_obj)
-                    
+                try:
+                    # 检查任务执行时间，防止运行时间过长
+                    if time.time() - start_time > 300:  # 5分钟超时
+                        logger.warning("采集任务执行时间过长，强制结束")
+                        break
+
+                    # 重新创建简化的Device对象用于采集
+                    device_obj = Device(
+                        id=data['id'],
+                        name=data['name'],
+                        addresses=data['addresses']
+                    )
+                    self._collect_device_data(device_obj)
+                    success_count += 1
+
+                except Exception as e:
+                    logger.error(f"采集设备 {data['name']} 失败: {e}")
+                    continue
+
+            logger.debug(f"采集任务完成，成功处理 {success_count}/{len(device_data)} 个设备")
+
         except Exception as e:
             logger.error(f"采集设备数据失败: {e}")
+        finally:
+            # 确保锁被释放
+            try:
+                self._collect_lock.release()
+                logger.debug("采集锁已释放")
+            except RuntimeError as e:
+                logger.error(f"释放采集锁失败: {e}")
+            except:
+                logger.error("释放采集锁时发生未知错误")
+
+            execution_time = time.time() - start_time
+            logger.info(f"采集任务完成，执行时间: {execution_time:.2f}秒")
     
     def _collect_device_data(self, device: Device):
         """采集单个设备数据"""
@@ -590,48 +761,67 @@ class PLCCollector:
     def reload_devices(self):
         """重新加载设备配置"""
         logger.info("重新加载设备配置")
-        self._load_devices()
+        if self.use_new_protocol_collector:
+            self.protocol_collector.reload_devices()
+        else:
+            self._load_devices()
     
     def get_device_status(self, device_id: int = None) -> Dict:
         """获取设备连接状态
-        
+
         Args:
             device_id: 设备ID，如果为None则返回所有设备状态
-            
+
         Returns:
             如果指定device_id，返回单个设备状态字典
             如果device_id为None，返回所有设备状态字典
         """
-        with self._lock:
-            if device_id is not None:
-                # 返回单个设备状态
-                connection = self.connections.get(device_id)
-                if connection:
-                    return {
-                        'is_connected': connection.is_connected,
-                        'last_error': connection.last_error,
-                        'device_name': connection.device.name,
-                        'status': 'online' if connection.is_connected else 'offline'
-                    }
+        if self.use_new_protocol_collector:
+            # 使用新的协议采集器
+            return self.protocol_collector.get_device_status(device_id)
+        else:
+            # 使用原有的CLR采集器
+            with self._lock:
+                if device_id is not None:
+                    # 返回单个设备状态
+                    connection = self.connections.get(device_id)
+                    if connection:
+                        return {
+                            'is_connected': connection.is_connected,
+                            'last_error': connection.last_error,
+                            'device_name': connection.device.name,
+                            'status': 'online' if connection.is_connected else 'offline'
+                        }
+                    else:
+                        return {
+                            'is_connected': False,
+                            'last_error': '设备连接不存在',
+                            'device_name': 'Unknown',
+                            'status': 'offline'
+                        }
                 else:
-                    return {
-                        'is_connected': False,
-                        'last_error': '设备连接不存在',
-                        'device_name': 'Unknown',
-                        'status': 'offline'
-                    }
-            else:
-                # 返回所有设备状态
-                status = {}
-                for dev_id, connection in self.connections.items():
-                    status[dev_id] = {
-                        'is_connected': connection.is_connected,
-                        'last_error': connection.last_error,
-                        'device_name': connection.device.name,
-                        'status': 'online' if connection.is_connected else 'offline'
-                    }
-                return status
-    
+                    # 返回所有设备状态
+                    status = {}
+                    for dev_id, connection in self.connections.items():
+                        status[dev_id] = {
+                            'is_connected': connection.is_connected,
+                            'last_error': connection.last_error,
+                            'device_name': connection.device.name,
+                            'status': 'online' if connection.is_connected else 'offline'
+                        }
+                    return status
+
+    def get_protocol_info(self) -> Dict:
+        """获取协议库信息"""
+        if self.use_new_protocol_collector:
+            return self.protocol_collector.get_protocol_info()
+        else:
+            return {
+                'protocol_type': 'Traditional CLR',
+                'clr_available': self.clr_available,
+                'supported_protocols': ['OmronFins', 'SiemensS7'] if self.clr_available else []
+            }
+
     def _cleanup_old_data(self):
         """清理过期的历史数据"""
         try:

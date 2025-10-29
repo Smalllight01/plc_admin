@@ -127,7 +127,7 @@ function CompactDeviceCard({ device, onClick }: { device: Device; onClick: () =>
   const latestValue = realtimeData?.data?.[0]?.value
 
   return (
-    <Card className={`group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer border-l-4 ${
+    <Card className={`group hover:shadow-neumorphic-md hover:scale-102 transition-all duration-300 cursor-pointer border-l-4 ${
       isOnline ? 'border-l-emerald-500 hover:border-l-emerald-600' : 'border-l-gray-300'
     }`} onClick={onClick}>
       <div className="p-4 space-y-3">

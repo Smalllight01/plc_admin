@@ -350,6 +350,36 @@ export const deviceService = {
     const response = await apiClient.get<ApiResponse<string[]>>(`/api/data/addresses/${id}`)
     return response.data.data!
   },
+
+  /**
+   * 获取所有设备状态
+   * @returns 所有设备状态信息
+   */
+  async getAllDeviceStatus(): Promise<Record<number, any>> {
+    const response = await apiClient.get<ApiResponse<Record<number, any>>>('/api/devices/status')
+    return response.data.data!
+  },
+
+  /**
+   * 获取协议库信息
+   * @returns 协议库状态信息
+   */
+  async getProtocolInfo(): Promise<{
+    modbus_available: boolean
+    omron_available: boolean
+    siemens_available: boolean
+    supported_protocols: string[]
+    total_protocols: number
+  }> {
+    const response = await apiClient.get<ApiResponse<{
+      modbus_available: boolean
+      omron_available: boolean
+      siemens_available: boolean
+      supported_protocols: string[]
+      total_protocols: number
+    }>>('/api/devices/protocol-info')
+    return response.data.data!
+  },
 }
 
 /**

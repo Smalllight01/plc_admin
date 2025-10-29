@@ -166,28 +166,28 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4 shadow-sm">
+    <header className="neumorphic-header px-6 py-5">
       <div className="flex items-center justify-between">
         {/* 左侧：菜单按钮和标题 */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-6">
           <Button
-            variant="ghost"
+            variant="neumorphic"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden hover:bg-blue-50 transition-colors"
+            className="md:hidden shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-md">
-              <Activity className="h-6 w-6 text-white" />
+
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-primary to-primary-dark rounded-2xl shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105 hover:rotate-3">
+              <Activity className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold gradient-text">
                 {systemName}
               </h1>
-              <p className="text-sm text-blue-600 font-medium">
+              <p className="text-sm text-muted-foreground font-medium">
                 {systemDescription}
               </p>
             </div>
@@ -195,26 +195,26 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* 右侧：用户操作 */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           {/* 通知按钮 */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative h-10 w-10 hover:bg-blue-50 transition-colors border border-gray-200 hover:border-blue-300"
+          <Button
+            variant="neumorphic"
+            size="icon"
+            className="relative h-11 w-11 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105 group"
           >
-            <Bell className="h-5 w-5 text-gray-600" />
+            <Bell className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
             {/* 通知红点 */}
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full border-2 border-background animate-pulse shadow-lg"></span>
           </Button>
 
           {/* 用户菜单 */}
-          <div className="flex items-center space-x-3 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl px-4 py-2 border border-gray-200">
+          <div className="flex items-center space-x-4 neumorphic-card px-5 py-3">
             {/* 用户信息 */}
             <div className="hidden sm:block text-right">
-              <div className="text-sm font-semibold text-gray-900">
+              <div className="text-sm font-bold text-foreground">
                 {user?.username}
               </div>
-              <div className="text-xs text-blue-600 font-medium">
+              <div className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-lg text-center mt-1">
                 {user?.role === 'super_admin'
                   ? '超级管理员'
                   : user?.role === 'admin'
@@ -224,35 +224,35 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             {/* 用户头像 */}
-            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-md">
-              <User className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105 hover:rotate-3">
+              <User className="w-7 h-7 text-primary-foreground" />
             </div>
 
             {/* 用户操作按钮 */}
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               {/* 修改密码 */}
               <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
                 <DialogTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="neumorphic"
                     size="icon"
                     title="修改密码"
                     onClick={resetPasswordForm}
-                    className="h-8 w-8 hover:bg-blue-100 transition-colors"
+                    className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
                   >
-                    <Key className="h-4 w-4 text-gray-600" />
+                    <Key className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] neumorphic-card">
                   <DialogHeader>
-                    <DialogTitle>修改密码</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-xl font-bold gradient-text">修改密码</DialogTitle>
+                    <DialogDescription className="text-muted-foreground font-medium">
                       请输入当前密码和新密码来修改您的登录密码
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="current-password">当前密码</Label>
+                  <div className="grid gap-6 py-4">
+                    <div className="grid gap-3">
+                      <Label htmlFor="current-password" className="text-base font-semibold">当前密码</Label>
                       <Input
                         id="current-password"
                         type="password"
@@ -264,10 +264,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                           }))
                         }
                         disabled={isChangingPassword}
+                        className="h-12 text-base"
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="new-password">新密码</Label>
+                    <div className="grid gap-3">
+                      <Label htmlFor="new-password" className="text-base font-semibold">新密码</Label>
                       <Input
                         id="new-password"
                         type="password"
@@ -279,10 +280,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                           }))
                         }
                         disabled={isChangingPassword}
+                        className="h-12 text-base"
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="confirm-password">确认新密码</Label>
+                    <div className="grid gap-3">
+                      <Label htmlFor="confirm-password" className="text-base font-semibold">确认新密码</Label>
                       <Input
                         id="confirm-password"
                         type="password"
@@ -294,20 +296,23 @@ export function Header({ onMenuClick }: HeaderProps) {
                           }))
                         }
                         disabled={isChangingPassword}
+                        className="h-12 text-base"
                       />
                     </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="gap-3">
                     <Button
-                      variant="outline"
+                      variant="neumorphic"
                       onClick={() => setShowPasswordDialog(false)}
                       disabled={isChangingPassword}
+                      className="shadow-neumorphic-sm hover:shadow-neumorphic"
                     >
                       取消
                     </Button>
                     <Button
                       onClick={handleChangePassword}
                       disabled={isChangingPassword}
+                      className="shadow-neumorphic hover:shadow-neumorphic-lg"
                     >
                       {isChangingPassword ? '修改中...' : '确认修改'}
                     </Button>
@@ -318,25 +323,25 @@ export function Header({ onMenuClick }: HeaderProps) {
               {/* 系统设置 */}
               {user?.role === 'super_admin' && (
                 <Button
-                  variant="ghost"
+                  variant="neumorphic"
                   size="icon"
                   title="系统设置"
                   onClick={() => router.push('/settings')}
-                  className="h-8 w-8 hover:bg-blue-100 transition-colors"
+                  className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
                 >
-                  <Settings className="h-4 w-4 text-gray-600" />
+                  <Settings className="h-5 w-5" />
                 </Button>
               )}
 
               {/* 登出 */}
               <Button
-                variant="ghost"
+                variant="neumorphic"
                 size="icon"
                 title="登出"
                 onClick={handleLogout}
-                className="h-8 w-8 hover:bg-red-100 transition-colors"
+                className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic hover:bg-destructive/10 transition-all duration-300 hover:scale-105 group"
               >
-                <LogOut className="h-4 w-4 text-gray-600 hover:text-red-600" />
+                <LogOut className="h-5 w-5 group-hover:text-destructive transition-colors duration-300" />
               </Button>
             </div>
           </div>

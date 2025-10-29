@@ -56,6 +56,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       requireAdmin: true,
     },
     {
+      title: '设备状态',
+      href: '/devices/status',
+      icon: Activity,
+      description: '监控设备连接状态',
+      requireAdmin: true,
+    },
+    {
       title: '实时数据',
       href: '/realtime',
       icon: Activity,
@@ -123,71 +130,98 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <div
       className={cn(
-        'flex flex-col h-full bg-white/80 backdrop-blur-sm border-r border-gray-200/50 transition-all duration-300 shadow-lg',
-        collapsed ? 'w-16' : 'w-64'
+        'neumorphic-sidebar flex flex-col h-full transition-all duration-300 ease-in-out',
+        collapsed ? 'w-14' : 'w-64'
       )}
     >
       {/* 头部 */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className={cn(
+        'flex items-center border-b border-border/50 bg-gradient-to-r from-primary/10 to-accent/5 transition-all duration-300',
+        collapsed ? 'justify-center p-3' : 'justify-between p-4'
+      )}>
         {!collapsed && (
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-md">
-              <Database className="w-5 h-5 text-white" />
+          <div className="flex items-center space-x-3 animate-slide-in">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105">
+              <Database className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg text-gray-900">
-              PLC平台
-            </span>
+            <div>
+              <span className="font-bold text-lg gradient-text">
+                PLC平台
+              </span>
+              <div className="text-xs text-muted-foreground font-medium">
+                数据采集系统
+              </div>
+            </div>
           </div>
         )}
-        
+
         <Button
-          variant="ghost"
+          variant="neumorphic"
           size="icon"
           onClick={onToggle}
-          className="h-9 w-9 hover:bg-blue-100 transition-colors border border-gray-200 hover:border-blue-300"
+          className="h-8 w-8 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4 text-gray-600" />
+            <ChevronRight className="h-4 w-4 text-foreground" />
           ) : (
-            <ChevronLeft className="h-4 w-4 text-gray-600" />
+            <ChevronLeft className="h-4 w-4 text-foreground" />
           )}
         </Button>
       </div>
 
       {/* 导航菜单 */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className={cn(
+        'flex-1 custom-scrollbar overflow-y-auto',
+        collapsed ? 'px-2 py-4' : 'px-4 py-5'
+      )}>
         {navigationItems
           .filter(hasPermission)
-          .map((item) => {
+          .map((item, index) => {
             const Icon = item.icon
             const active = isActive(item.href)
-            
+
             return (
-              <Link key={item.href} href={item.href}>
+              <div key={item.href} className={collapsed ? 'mb-3' : 'mb-4'}>
+                <Link href={item.href}>
                 <div
                   className={cn(
-                    'flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 border',
-                    'hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm',
+                    'group flex items-center transition-all duration-300 ease-out border-2',
+                    'hover:shadow-neumorphic hover:-translate-y-0.5',
+                    collapsed
+                      ? 'justify-center px-1.5 py-2 rounded-lg w-10 h-10'
+                      : 'justify-start space-x-3 px-3 py-2.5 rounded-xl min-h-[44px]',
                     active
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-500 shadow-md hover:from-blue-600 hover:to-indigo-600'
-                      : 'text-gray-700 hover:text-gray-900 border-transparent bg-white/50'
+                      ? 'bg-gradient-to-r from-primary to-primary-dark text-primary-foreground border-primary shadow-neumorphic-lg scale-105'
+                      : 'bg-card text-foreground border-border/50 hover:border-primary/50 hover:bg-muted/30'
                   )}
                   title={collapsed ? item.title : undefined}
+                  style={{
+                    animationDelay: `${index * 50}ms`
+                  }}
                 >
-                  <Icon className={cn(
-                    'h-5 w-5 flex-shrink-0 transition-colors',
-                    active ? 'text-white' : 'text-gray-600'
-                  )} />
+                  <div className={cn(
+                    'transition-all duration-300 flex items-center justify-center',
+                    active
+                      ? 'bg-primary-foreground/20 shadow-inner'
+                      : 'bg-gradient-to-br from-muted to-accent/20 group-hover:from-primary/10 group-hover:to-accent/30',
+                    collapsed ? 'p-1.5 rounded-lg w-6 h-6' : 'p-2 rounded-lg'
+                  )}>
+                    <Icon className={cn(
+                      'transition-all duration-300',
+                      collapsed ? 'h-4 w-4' : 'h-5 w-5',
+                      active ? 'text-primary-foreground' : 'text-foreground group-hover:text-primary group-hover:scale-110'
+                    )} />
+                  </div>
                   {!collapsed && (
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 animate-fade-in ml-2">
                       <div className={cn(
-                        'font-semibold text-sm',
-                        active ? 'text-white' : 'text-gray-900'
+                        'font-bold text-sm transition-colors duration-300 leading-tight',
+                        active ? 'text-primary-foreground' : 'text-foreground group-hover:text-primary'
                       )}>
                         {item.title}
                       </div>
                       {!active && (
-                        <div className="text-xs text-gray-500 truncate mt-0.5">
+                        <div className="text-xs text-muted-foreground truncate mt-0.5 group-hover:text-primary/70 transition-colors leading-tight">
                           {item.description}
                         </div>
                       )}
@@ -195,27 +229,30 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   )}
                 </div>
               </Link>
+              </div>
             )
           })}
       </nav>
 
       {/* 用户信息 */}
       {!collapsed && user && (
-        <div className="p-4 border-t border-gray-200/50 bg-gradient-to-r from-gray-50 to-blue-50">
-          <div className="flex items-center space-x-3 bg-white/80 rounded-xl p-3 border border-gray-200 shadow-sm">
-            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-md">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-gray-900 truncate">
-                {user.username}
+        <div className="p-3 border-t border-border/50 bg-gradient-to-r from-muted/30 to-accent/10 animate-slide-up">
+          <div className="neumorphic-card p-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105">
+                <Users className="w-5 h-5 text-primary-foreground" />
               </div>
-              <div className="text-xs text-blue-600 font-medium">
-                {user.role === 'super_admin'
-                  ? '超级管理员'
-                  : user.role === 'admin'
-                  ? '管理员'
-                  : '普通用户'}
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm text-foreground truncate">
+                  {user.username}
+                </div>
+                <div className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded text-center mt-1">
+                  {user.role === 'super_admin'
+                    ? '超级管理员'
+                    : user.role === 'admin'
+                    ? '管理员'
+                    : '普通用户'}
+                </div>
               </div>
             </div>
           </div>

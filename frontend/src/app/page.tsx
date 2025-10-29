@@ -150,36 +150,36 @@ export default function DashboardPage() {
     <AuthGuard>
       <MainLayout>
         <div className="p-6 space-y-6">
-          {/* 页面标题 - 优化版本 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+          {/* 页面标题 - 扁平化拟物风格 */}
+          <div className="stat-card p-8">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-neumorphic">
+                    <BarChart3 className="h-7 w-7 text-primary-foreground" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">系统仪表板</h1>
-                    <p className="text-blue-600 mt-1 font-medium flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
+                    <h1 className="text-3xl font-bold gradient-text">系统仪表板</h1>
+                    <p className="text-muted-foreground mt-2 font-medium flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
                       实时监控系统状态和关键指标
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl shadow-neumorphic-sm">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg"></div>
                   <span className="text-sm font-medium text-emerald-700">实时更新</span>
-                  <Clock className="h-4 w-4 text-emerald-600" />
+                  <Clock className="h-5 w-5 text-emerald-600" />
                 </div>
                 <Button
                   onClick={loadDashboardData}
                   disabled={isLoading}
-                  size="sm"
-                  className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-200 hover:border-blue-300"
+                  variant="neumorphic"
+                  className="shadow-neumorphic hover:shadow-neumorphic-lg"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-5 w-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   刷新数据
                 </Button>
               </div>
@@ -192,39 +192,40 @@ export default function DashboardPage() {
               const Icon = card.icon
               
               return (
-                <Card key={index} className={`group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2 ${card.borderColor} bg-white overflow-hidden relative`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 opacity-50"></div>
-                  <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                    <div className="space-y-1">
-                      <CardTitle className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                <Card key={index} className="group hover:shadow-neumorphic-lg hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-card to-secondary opacity-80"></div>
+                  <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
+                    <div className="space-y-2">
+                      <CardTitle className="text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-300">
                         {card.title}
                       </CardTitle>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="text-xs font-bold text-muted-foreground bg-gradient-to-r from-muted to-accent/20 px-3 py-1 rounded-full border border-border/50 shadow-neumorphic-sm">
                           {card.trend}
                         </span>
                       </div>
                     </div>
-                    <div className={`p-3 rounded-xl ${card.bgColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className={`h-6 w-6 ${card.color} group-hover:scale-110 transition-transform duration-300`} />
+                    <div className={`p-3 rounded-xl ${card.bgColor} shadow-neumorphic group-hover:scale-105 group-hover:rotate-3 transition-all duration-500 ease-out`}>
+                      <Icon className={`h-6 w-6 ${card.color} group-hover:scale-105 transition-transform duration-300`} />
                     </div>
                   </CardHeader>
                   <CardContent className="relative">
-                    <div className="text-3xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors">
+                    <div className="text-3xl font-bold gradient-text mb-3 group-hover:scale-102 transition-transform duration-300">
                       {isLoading ? (
-                        <div className="animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 h-9 w-20 rounded-lg"></div>
+                        <div className="loading-skeleton h-8 w-20 rounded-xl"></div>
                       ) : (
-                        <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
                           {card.value}
                         </span>
                       )}
                     </div>
-                    <CardDescription className="text-sm text-gray-600 leading-relaxed">
+                    <CardDescription className="text-sm text-muted-foreground leading-relaxed font-medium">
                       {card.description}
                     </CardDescription>
-                    
-                    {/* 装饰性元素 */}
-                    <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-gray-100 to-transparent rounded-tl-full opacity-30"></div>
+
+                    {/* 装饰性几何元素 */}
+                    <div className="absolute bottom-1 right-1 w-16 h-16 bg-gradient-to-tl from-primary/5 to-transparent rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-3 right-3 w-3 h-3 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full"></div>
                   </CardContent>
                 </Card>
               )
@@ -234,70 +235,78 @@ export default function DashboardPage() {
           {/* 快速操作和状态信息 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 系统状态 */}
-            <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                    <Activity className="h-5 w-5 text-white" />
+            <Card className="hover:shadow-neumorphic-md transition-all duration-500 hover:-translate-y-0.5">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-4">
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-neumorphic">
+                    <Activity className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <span className="text-lg font-bold text-gray-800">系统状态</span>
+                  <span className="text-xl font-bold gradient-text">系统状态</span>
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground font-medium">
                   当前系统运行状态概览
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
                   <div className="flex items-center space-x-3">
-                    <Shield className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-gray-700">系统运行状态</span>
+                    <div className="p-2 bg-emerald-500 rounded-xl shadow-neumorphic-sm">
+                      <Shield className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-foreground">系统运行状态</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
-                    <span className="text-sm font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full">正常运行</span>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                    <span className="status-indicator status-online">正常运行</span>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 shadow-sm">
+
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
                   <div className="flex items-center space-x-3">
-                    <Database className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700">数据采集状态</span>
+                    <div className="p-2 bg-blue-500 rounded-xl shadow-neumorphic-sm">
+                      <Database className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-foreground">数据采集状态</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-lg"></div>
-                    <span className="text-sm font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full">采集中</span>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse shadow-lg"></div>
+                    <span className="status-indicator status-online">采集中</span>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
+
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
                   <div className="flex items-center space-x-3">
-                    <Wifi className="h-5 w-5 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">设备连接率</span>
+                    <div className="p-2 bg-purple-500 rounded-xl shadow-neumorphic-sm">
+                      <Wifi className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-foreground">设备连接率</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="text-lg font-bold text-purple-700">
-                      {stats.total_devices > 0 
+                  <div className="flex items-center space-x-3">
+                    <div className="text-xl font-bold gradient-text">
+                      {stats.total_devices > 0
                         ? `${Math.round((stats.online_devices / stats.total_devices) * 100)}%`
                         : '0%'
                       }
                     </div>
-                    <div className={`w-16 h-2 rounded-full ${stats.total_devices > 0 && (stats.online_devices / stats.total_devices) > 0.8 ? 'bg-green-400' : stats.total_devices > 0 && (stats.online_devices / stats.total_devices) > 0.5 ? 'bg-yellow-400' : 'bg-red-400'}`}>
-                      <div 
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-500"
+                    <div className="w-20 h-3 rounded-full bg-muted overflow-hidden shadow-inner">
+                      <div
+                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-700 ease-out shadow-neumorphic-sm"
                         style={{ width: stats.total_devices > 0 ? `${(stats.online_devices / stats.total_devices) * 100}%` : '0%' }}
                       ></div>
                     </div>
                   </div>
                 </div>
-                
+
                 {stats.recent_alerts > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
                     <div className="flex items-center space-x-3">
-                      <AlertTriangle className="h-5 w-5 text-orange-600" />
-                      <span className="text-sm font-medium text-gray-700">近期告警</span>
+                      <div className="p-2 bg-orange-500 rounded-xl shadow-neumorphic-sm">
+                        <AlertTriangle className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="text-sm font-bold text-foreground">近期告警</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-bold text-orange-700 bg-orange-100 px-3 py-1 rounded-full">
+                    <div className="flex items-center space-x-3">
+                      <span className="status-indicator bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 shadow-neumorphic-sm">
                         {stats.recent_alerts} 条
                       </span>
                     </div>
@@ -307,86 +316,86 @@ export default function DashboardPage() {
             </Card>
 
             {/* 快速操作 */}
-            <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                    <Zap className="h-5 w-5 text-white" />
+            <Card className="hover:shadow-neumorphic-md transition-all duration-500 hover:-translate-y-0.5">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-4">
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic">
+                    <Zap className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <span className="text-lg font-bold text-gray-800">快速操作</span>
+                  <span className="text-xl font-bold gradient-text">快速操作</span>
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground font-medium">
                   常用功能快速入口
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
                   <Link href="/realtime">
-                    <div className="group p-4 text-left bg-white border-2 border-green-200 rounded-xl hover:border-green-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="group p-5 text-left bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-2xl hover:border-emerald-400 hover:shadow-neumorphic-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-neumorphic-sm group-hover:scale-105 group-hover:rotate-1.5 transition-all duration-300">
                           <Activity className="h-5 w-5 text-white" />
                         </div>
-                        <span className="text-sm font-bold text-gray-800 group-hover:text-green-700 transition-colors">实时数据</span>
+                        <span className="text-base font-bold gradient-text group-hover:text-emerald-700 transition-colors">实时数据</span>
                       </div>
-                      <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">查看实时采集数据</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">查看实时采集数据</p>
                     </div>
                   </Link>
-                  
+
                   <Link href="/devices">
-                    <div className="group p-4 text-left bg-white border-2 border-purple-200 rounded-xl hover:border-purple-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="group p-5 text-left bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl hover:border-purple-400 hover:shadow-neumorphic-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-neumorphic-sm group-hover:scale-105 group-hover:rotate-1.5 transition-all duration-300">
                           <HardDrive className="h-5 w-5 text-white" />
                         </div>
-                        <span className="text-sm font-bold text-gray-800 group-hover:text-purple-700 transition-colors">设备管理</span>
+                        <span className="text-base font-bold gradient-text group-hover:text-purple-700 transition-colors">设备管理</span>
                       </div>
-                      <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">管理PLC设备</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">管理PLC设备</p>
                     </div>
                   </Link>
-                  
+
                   <Link href="/history">
-                    <div className="group p-4 text-left bg-white border-2 border-indigo-200 rounded-xl hover:border-indigo-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="group p-5 text-left bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl hover:border-indigo-400 hover:shadow-neumorphic-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-neumorphic-sm group-hover:scale-105 group-hover:rotate-1.5 transition-all duration-300">
                           <History className="h-5 w-5 text-white" />
                         </div>
-                        <span className="text-sm font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">历史数据</span>
+                        <span className="text-base font-bold gradient-text group-hover:text-indigo-700 transition-colors">历史数据</span>
                       </div>
-                      <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">查看历史记录</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">查看历史记录</p>
                     </div>
                   </Link>
-                  
+
                   <Link href="/statistics">
-                    <div className="group p-4 text-left bg-white border-2 border-blue-200 rounded-xl hover:border-blue-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="group p-5 text-left bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 hover:shadow-neumorphic-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-neumorphic-sm group-hover:scale-105 group-hover:rotate-1.5 transition-all duration-300">
                           <TrendingUp className="h-5 w-5 text-white" />
                         </div>
-                        <span className="text-sm font-bold text-gray-800 group-hover:text-blue-700 transition-colors">数据统计</span>
+                        <span className="text-base font-bold gradient-text group-hover:text-blue-700 transition-colors">数据统计</span>
                       </div>
-                      <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">数据分析统计</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">数据分析统计</p>
                     </div>
                   </Link>
                 </div>
-                
+
                 {/* 额外的快速操作 */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="pt-6 border-t border-border">
+                  <div className="grid grid-cols-3 gap-4">
                     <Link href="/settings">
-                      <Button variant="outline" size="sm" className="w-full justify-start space-x-2 hover:bg-gray-50">
+                      <Button variant="neumorphic" size="sm" className="w-full justify-start space-x-2 shadow-neumorphic-sm hover:shadow-neumorphic">
                         <Settings className="h-4 w-4" />
                         <span>设置</span>
                       </Button>
                     </Link>
                     <Link href="/groups">
-                      <Button variant="outline" size="sm" className="w-full justify-start space-x-2 hover:bg-gray-50">
+                      <Button variant="neumorphic" size="sm" className="w-full justify-start space-x-2 shadow-neumorphic-sm hover:shadow-neumorphic">
                         <Layers className="h-4 w-4" />
                         <span>分组</span>
                       </Button>
                     </Link>
                     <Link href="/users">
-                      <Button variant="outline" size="sm" className="w-full justify-start space-x-2 hover:bg-gray-50">
+                      <Button variant="neumorphic" size="sm" className="w-full justify-start space-x-2 shadow-neumorphic-sm hover:shadow-neumorphic">
                         <Users className="h-4 w-4" />
                         <span>用户</span>
                       </Button>

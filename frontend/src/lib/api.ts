@@ -197,6 +197,15 @@ export interface DeviceStatus {
   error_message?: string
 }
 
+// 协议库信息类型
+export interface ProtocolInfo {
+  modbus_available: boolean
+  omron_available: boolean
+  siemens_available: boolean
+  supported_protocols: string[]
+  total_protocols: number
+}
+
 // 采集日志类型
 export interface CollectLog {
   id: number
