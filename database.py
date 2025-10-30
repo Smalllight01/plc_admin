@@ -119,19 +119,86 @@ class DatabaseManager:
         finally:
             db.close()
     
-    def write_plc_data(self, device_id: int, device_name: str, address: str, value: float, timestamp=None):
-        """写入PLC数据到InfluxDB"""
+    def write_plc_data(self, device_id: int, device_name: str, address: str, value: float,
+                       timestamp=None, metadata=None):
+        """写入PLC数据到InfluxDB
+
+        Args:
+            device_id: 设备ID
+            device_name: 设备名称
+            address: 地址
+            value: 数值
+            timestamp: 时间戳，如果为None则使用当前时间
+            metadata: 额外的元数据字典
+
+        Returns:
+            bool: 写入是否成功
+        """
         if not self.influx_write_api:
             logger.warning("InfluxDB未初始化，无法写入数据")
             return False
-        
+
         try:
+            # 构建存储信息用于日志记录
+            storage_info = {
+                'device_id': device_id,
+                'device_name': device_name,
+                'address': address,
+                'value': value
+            }
+
+            # 基础Point配置（确保所有数值字段都是float类型）
             point = Point("plc_data") \
                 .tag("device_id", str(device_id)) \
                 .tag("device_name", device_name) \
                 .tag("address", address) \
-                .field("value", value)
-            
+                .field("value", float(value))
+
+            # 添加元数据作为tags和fields
+            if metadata:
+                # 添加tags（用于查询和分组，存储字符串和枚举类型的数据）
+                if 'stationId' in metadata:
+                    point = point.tag("station_id", str(metadata['stationId']))
+                    storage_info['station_id'] = metadata['stationId']
+                if 'registerType' in metadata:
+                    point = point.tag("register_type", metadata['registerType'])
+                    storage_info['register_type'] = metadata['registerType']
+                if 'functionCode' in metadata:
+                    point = point.tag("function_code", str(metadata['functionCode']))
+                    storage_info['function_code'] = metadata['functionCode']
+                if 'dataType' in metadata:
+                    point = point.tag("data_type", metadata['dataType'])
+                    storage_info['data_type'] = metadata['dataType']
+                if 'unit' in metadata and metadata['unit']:
+                    point = point.tag("unit", metadata['unit'])
+                    storage_info['unit'] = metadata['unit']
+                if 'quality' in metadata:
+                    point = point.tag("quality", str(metadata['quality']))
+                    storage_info['quality'] = metadata['quality']
+                if 'byteOrder' in metadata:
+                    point = point.tag("byte_order", metadata['byteOrder'])
+                    storage_info['byte_order'] = metadata['byteOrder']
+
+                # 添加fields（统一转换为float类型，避免schema collision）
+                if 'rawValue' in metadata and isinstance(metadata['rawValue'], (int, float)):
+                    point = point.field("raw_value", float(metadata['rawValue']))
+                    storage_info['raw_value'] = float(metadata['rawValue'])
+                if 'scaledValue' in metadata and isinstance(metadata['scaledValue'], (int, float)):
+                    point = point.field("scaled_value", float(metadata['scaledValue']))
+                    storage_info['scaled_value'] = float(metadata['scaledValue'])
+                # scan_rate字段已存在为integer类型，需要保持兼容
+                if 'scanRate' in metadata and isinstance(metadata['scanRate'], (int, float)):
+                    point = point.field("scan_rate", int(metadata['scanRate']))
+                    storage_info['scan_rate'] = int(metadata['scanRate'])
+                if 'wordSwap' in metadata and isinstance(metadata['wordSwap'], bool):
+                    point = point.field("word_swap", float(int(metadata['wordSwap'])))
+                    storage_info['word_swap'] = metadata['wordSwap']
+                if 'responseTime' in metadata and isinstance(metadata['responseTime'], (int, float)):
+                    point = point.field("response_time", float(metadata['responseTime']))
+                    storage_info['response_time'] = float(metadata['responseTime'])
+
+                # 注意：byteOrder, quality, unit 这些字符串类型的数据已经在上面作为tags存储，不需要作为fields重复存储
+
             # 设置时间戳为上海时区
             if timestamp:
                 # 如果传入的时间戳没有时区信息，假设为本地时间并转换为上海时区
@@ -143,12 +210,37 @@ class DatabaseManager:
                     shanghai_tz = pytz.timezone('Asia/Shanghai')
                     timestamp = timestamp.astimezone(shanghai_tz)
                 point = point.time(timestamp)
+                storage_info['timestamp'] = timestamp.strftime('%Y-%m-%d %H:%M:%S')
             else:
                 # 如果没有传入时间戳，使用当前上海时区时间
                 shanghai_tz = pytz.timezone('Asia/Shanghai')
                 current_time = datetime.now(shanghai_tz)
                 point = point.time(current_time)
-            
+                storage_info['timestamp'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            # 记录详细的存储日志
+            log_msg = f"InfluxDB存储数据: {storage_info['device_name']}(ID:{storage_info['device_id']})"
+            log_msg += f" 地址:{storage_info['address']} 值:{storage_info['value']}"
+
+            if 'raw_value' in storage_info and 'scaled_value' in storage_info:
+                log_msg += f" 原始值:{storage_info['raw_value']} 缩放值:{storage_info['scaled_value']}"
+
+            if 'data_type' in storage_info:
+                log_msg += f" 类型:{storage_info['data_type']}"
+
+            if 'unit' in storage_info:
+                log_msg += f" 单位:{storage_info['unit']}"
+
+            if 'station_id' in storage_info:
+                log_msg += f" 站号:{storage_info['station_id']}"
+
+            if 'response_time' in storage_info:
+                log_msg += f" 响应时间:{storage_info['response_time']}ms"
+
+            log_msg += f" 时间:{storage_info['timestamp']}"
+
+            logger.info(log_msg)
+
             self.influx_write_api.write(
                 bucket=config.INFLUXDB_BUCKET,
                 org=config.INFLUXDB_ORG,
@@ -157,6 +249,196 @@ class DatabaseManager:
             return True
         except Exception as e:
             logger.error(f"写入InfluxDB失败: {e}")
+            return False
+
+    def write_enhanced_plc_data(self, device_id: int, device_name: str, address_config: dict,
+                                 raw_value: float, scaled_value: float, timestamp=None,
+                                 response_time=None):
+        """写入增强的PLC数据（包含完整地址配置信息）
+
+        Args:
+            device_id: 设备ID
+            device_name: 设备名称
+            address_config: 地址配置字典
+            raw_value: 原始数值
+            scaled_value: 缩放后的数值
+            timestamp: 时间戳
+            response_time: 响应时间（毫秒）
+
+        Returns:
+            bool: 写入是否成功
+        """
+        if not self.influx_write_api:
+            logger.warning("InfluxDB未初始化，无法写入数据")
+            return False
+
+        try:
+            # 构建元数据
+            metadata = {
+                'stationId': address_config.get('stationId', 1),
+                'registerType': address_config.get('registerType', 'holding'),
+                'functionCode': address_config.get('functionCode', 3),
+                'dataType': address_config.get('type', 'int16'),
+                'unit': address_config.get('unit', ''),
+                'rawValue': raw_value,
+                'scaledValue': scaled_value,
+                'scanRate': address_config.get('scanRate', 1000),
+                'byteOrder': address_config.get('byteOrder', 'CDAB'),
+                'wordSwap': address_config.get('wordSwap', False),
+                'quality': 'good' if scaled_value is not None else 'bad'
+            }
+
+            if response_time is not None:
+                metadata['responseTime'] = response_time
+
+            # 使用增强的写入方法
+            return self.write_plc_data(
+                device_id=device_id,
+                device_name=device_name,
+                address=address_config.get('address', ''),
+                value=scaled_value,
+                timestamp=timestamp,
+                metadata=metadata
+            )
+
+        except Exception as e:
+            logger.error(f"写入增强PLC数据失败: {e}")
+            return False
+
+    def write_batch_plc_data(self, device_id: int, device_name: str, data_points: list):
+        """批量写入PLC数据到InfluxDB
+
+        Args:
+            device_id: 设备ID
+            device_name: 设备名称
+            data_points: 数据点列表，每个点包含address, value, timestamp, metadata等
+
+        Returns:
+            bool: 写入是否成功
+        """
+        if not self.influx_write_api:
+            logger.warning("InfluxDB未初始化，无法写入数据")
+            return False
+
+        try:
+            points = []
+            shanghai_tz = pytz.timezone('Asia/Shanghai')
+            current_time = datetime.now(shanghai_tz)
+
+            # 记录批量存储的概要信息
+            batch_summary = {
+                'device_id': device_id,
+                'device_name': device_name,
+                'total_points': len(data_points),
+                'timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'addresses': []
+            }
+
+            for data_point in data_points:
+                address = data_point.get('address', '')
+                value = data_point.get('value', 0.0)
+                timestamp = data_point.get('timestamp', current_time)
+                metadata = data_point.get('metadata', {})
+
+                # 收集地址信息用于日志
+                address_info = {
+                    'address': address,
+                    'value': value
+                }
+
+                if metadata:
+                    if 'rawValue' in metadata:
+                        address_info['raw_value'] = metadata['rawValue']
+                    if 'scaledValue' in metadata:
+                        address_info['scaled_value'] = metadata['scaledValue']
+                    if 'dataType' in metadata:
+                        address_info['data_type'] = metadata['dataType']
+                    if 'unit' in metadata:
+                        address_info['unit'] = metadata['unit']
+                    if 'stationId' in metadata:
+                        address_info['station_id'] = metadata['stationId']
+
+                batch_summary['addresses'].append(address_info)
+
+                # 创建Point（确保所有数值字段都是float类型）
+                point = Point("plc_data") \
+                    .tag("device_id", str(device_id)) \
+                    .tag("device_name", device_name) \
+                    .tag("address", address) \
+                    .field("value", float(value))
+
+                # 添加元数据
+                if metadata:
+                    if 'stationId' in metadata:
+                        point = point.tag("station_id", str(metadata['stationId']))
+                    if 'registerType' in metadata:
+                        point = point.tag("register_type", metadata['registerType'])
+                    if 'functionCode' in metadata:
+                        point = point.tag("function_code", str(metadata['functionCode']))
+                    if 'dataType' in metadata:
+                        point = point.tag("data_type", metadata['dataType'])
+                    if 'unit' in metadata and metadata['unit']:
+                        point = point.tag("unit", metadata['unit'])
+                    if 'quality' in metadata:
+                        point = point.tag("quality", str(metadata['quality']))
+                    if 'byteOrder' in metadata:
+                        point = point.tag("byte_order", metadata['byteOrder'])
+
+                    # 添加fields（统一转换为float类型，避免schema collision）
+                    if 'rawValue' in metadata and isinstance(metadata['rawValue'], (int, float)):
+                        point = point.field("raw_value", float(metadata['rawValue']))
+                    if 'scaledValue' in metadata and isinstance(metadata['scaledValue'], (int, float)):
+                        point = point.field("scaled_value", float(metadata['scaledValue']))
+                    if 'responseTime' in metadata and isinstance(metadata['responseTime'], (int, float)):
+                        point = point.field("response_time", float(metadata['responseTime']))
+
+                # 处理时间戳
+                if timestamp.tzinfo is None:
+                    timestamp = shanghai_tz.localize(timestamp)
+                else:
+                    timestamp = timestamp.astimezone(shanghai_tz)
+
+                point = point.time(timestamp)
+                points.append(point)
+
+            # 记录批量存储的详细信息
+            log_msg = f"InfluxDB批量存储数据: {batch_summary['device_name']}(ID:{batch_summary['device_id']})"
+            log_msg += f" 共{batch_summary['total_points']}个数据点"
+            log_msg += f" 时间:{batch_summary['timestamp']}"
+
+            # 添加前几个数据点的详细信息
+            if len(batch_summary['addresses']) <= 5:
+                # 如果数据点不多，显示全部
+                for addr_info in batch_summary['addresses']:
+                    log_msg += f"\n  - 地址:{addr_info['address']} 值:{addr_info['value']}"
+                    if 'raw_value' in addr_info and 'scaled_value' in addr_info:
+                        log_msg += f" (原始:{addr_info['raw_value']} 缩放:{addr_info['scaled_value']})"
+                    if 'data_type' in addr_info:
+                        log_msg += f" 类型:{addr_info['data_type']}"
+                    if 'unit' in addr_info:
+                        log_msg += f" 单位:{addr_info['unit']}"
+            else:
+                # 如果数据点很多，只显示前3个和总数
+                for i, addr_info in enumerate(batch_summary['addresses'][:3]):
+                    log_msg += f"\n  - 地址:{addr_info['address']} 值:{addr_info['value']}"
+                    if 'data_type' in addr_info:
+                        log_msg += f" 类型:{addr_info['data_type']}"
+                log_msg += f"\n  ... 还有{len(batch_summary['addresses']) - 3}个数据点"
+
+            logger.info(log_msg)
+
+            # 批量写入
+            self.influx_write_api.write(
+                bucket=config.INFLUXDB_BUCKET,
+                org=config.INFLUXDB_ORG,
+                record=points
+            )
+
+            logger.debug(f"批量写入{len(points)}个PLC数据点到InfluxDB成功")
+            return True
+
+        except Exception as e:
+            logger.error(f"批量写入InfluxDB失败: {e}")
             return False
     
     def write_communication_error(self, device_id: int, device_name: str, error_message: str, timestamp=None):
@@ -222,6 +504,7 @@ class DatabaseManager:
             from(bucket: "{config.INFLUXDB_BUCKET}")
             |> range(start: {start_time}, stop: {stop_time})
             |> filter(fn: (r) => r._measurement == "plc_data")
+            |> filter(fn: (r) => r._field == "value")
             '''
             
             if device_id:
@@ -272,11 +555,13 @@ class DatabaseManager:
         
         try:
             # 缩短查询时间范围到5分钟，确保数据的实时性
+            # 只查询主value字段，避免类型冲突
             query = f'''
             from(bucket: "{config.INFLUXDB_BUCKET}")
             |> range(start: -5m)
             |> filter(fn: (r) => r._measurement == "plc_data")
             |> filter(fn: (r) => r.device_id == "{device_id}")
+            |> filter(fn: (r) => r._field == "value")
             |> group(columns: ["address"])
             |> last()
             |> limit(n: {limit * 100})
@@ -342,6 +627,7 @@ class DatabaseManager:
             |> range(start: {start_time_utc.isoformat()}, stop: {end_time_utc.isoformat()})
             |> filter(fn: (r) => r._measurement == "plc_data")
             |> filter(fn: (r) => r.device_id == "{device_id}")
+            |> filter(fn: (r) => r._field == "value")
             '''
             
             if address:
@@ -741,6 +1027,7 @@ class DatabaseManager:
             |> range(start: {start_time_utc.isoformat()}, stop: {end_time_utc.isoformat()})
             |> filter(fn: (r) => r._measurement == "plc_data")
             |> filter(fn: (r) => r.device_id == "{device_id}")
+            |> filter(fn: (r) => r._field == "value")
             |> group(columns: ["address"])
             '''
             

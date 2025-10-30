@@ -11,36 +11,17 @@ from typing import Dict, List, Optional
 from loguru import logger
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# 尝试导入CLR和HslCommunication
+# 尝试导入CLR（用于检查环境）
 try:
     import clr
     # 确保 HslCommunication.dll 在 Python 的搜索路径中
     clr.AddReference(r'HslCommunication')
-
-    # 导入需要的命名空间和类
-    from HslCommunication.Profinet.Omron import OmronFinsNet, OmronPlcType
-    from HslCommunication.Profinet.Siemens import SiemensS7Net, SiemensPLCS
-    from HslCommunication.ModBus import ModbusTcpNet, ModbusRtuOverTcp, ModbusRtu
-    from HslCommunication.Core import DataFormat
-    from HslCommunication.Core.Pipe import PipeTcpNet
-
     CLR_AVAILABLE = True
-    logger.info("CLR和HslCommunication库加载成功（包含Modbus支持）")
+    logger.info("CLR环境检查成功")
 except Exception as e:
-    logger.error(f"CLR或HslCommunication库加载失败: {e}")
+    logger.error(f"CLR环境检查失败: {e}")
     logger.error("请确保已安装Mono运行时和HslCommunication.dll")
     CLR_AVAILABLE = False
-
-    # 定义占位符类以避免导入错误
-    class OmronFinsNet: pass
-    class OmronPlcType: pass
-    class SiemensS7Net: pass
-    class SiemensPLCS: pass
-    class ModbusTcpNet: pass
-    class ModbusRtuOverTcp: pass
-    class ModbusRtu: pass
-    class DataFormat: pass
-    class PipeTcpNet: pass
 
 from config import config
 from database import db_manager
@@ -48,97 +29,45 @@ from models import Device, CollectLog
 import json
 import os
 
+# 导入协议处理器
+from protocols import ProtocolFactory
+
 # 不再使用新协议采集器
 PROTOCOL_COLLECTOR_AVAILABLE = False
-logger.info("使用原始采集器（已扩展Modbus支持）")
+logger.info("使用协议独立的采集器（已重构为模块化架构）")
 
 class PLCConnection:
-    """PLC连接类"""
-    
+    """PLC连接类（重构为协议独立）"""
+
     def __init__(self, device: Device):
         self.device = device
-        self.plc = None
         self.is_connected = False
         self.last_error = None
         self._lock = threading.Lock()
-        
-        # 根据PLC型号创建对应的连接对象
+
+        # 使用工厂模式创建协议处理器
+        self.protocol_handler = ProtocolFactory.create_handler(device)
+
+        # 创建PLC实例
         self._create_plc_instance()
-    
+
     def _create_plc_instance(self):
-        """根据设备配置创建PLC实例"""
+        """使用协议处理器创建PLC实例"""
         try:
-            if not globals().get('CLR_AVAILABLE', False):
-                logger.error(f"CLR环境不可用，无法创建PLC实例: {self.device.name}")
-                self.last_error = "CLR环境不可用"
-                return
-                
-            plc_type_lower = self.device.plc_type.lower()
-
-            # Modbus协议判断
-            if any(modbus_type in plc_type_lower for modbus_type in [
-                'modbus', 'mb_', 'mbtcp', 'mbrtu', 'mb-rtu'
-            ]):
-                if 'tcp' in plc_type_lower and 'rtu' in plc_type_lower:
-                    # Modbus RTU over TCP
-                    self.plc = ModbusRtuOverTcp()
-                    logger.info(f"创建Modbus RTU over TCP客户端: {self.device.name}")
-                elif 'rtu' in plc_type_lower:
-                    # Modbus RTU (串口)
-                    self.plc = ModbusRtu()
-                    logger.info(f"创建Modbus RTU客户端: {self.device.name}")
-                else:
-                    # Modbus TCP
-                    self.plc = ModbusTcpNet()
-                    logger.info(f"创建Modbus TCP客户端: {self.device.name}")
-
-                # Modbus设备直接设置IP和端口，不需要通信管道
-                self.plc.IpAddress = self.device.ip_address
-                self.plc.Port = self.device.port
-
-            elif 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
-                self.plc = OmronFinsNet()
-                self.plc.PlcType = OmronPlcType.CSCJ
-                self.plc.DA2 = 0
-                self.plc.ReceiveUntilEmpty = False
-                self.plc.ByteTransform.DataFormat = DataFormat.CDAB
-                self.plc.ByteTransform.IsStringReverseByteWord = True
-
-                # 设置通信管道
-                pipe_tcp_net = PipeTcpNet(self.device.ip_address, self.device.port)
-                pipe_tcp_net.ConnectTimeOut = config.PLC_CONNECT_TIMEOUT
-                pipe_tcp_net.ReceiveTimeOut = config.PLC_RECEIVE_TIMEOUT
-                self.plc.CommunicationPipe = pipe_tcp_net
-
-            elif 'siemens' in plc_type_lower or '西门子' in plc_type_lower:
-                self.plc = SiemensS7Net(SiemensPLCS.S1200)
-                self.plc.ByteTransform.DataFormat = DataFormat.DCBA
-
-                # 西门子S7直接设置IP和端口
-                self.plc.IpAddress = self.device.ip_address
-                self.plc.Port = self.device.port
-
+            success = self.protocol_handler.create_plc_instance()
+            if success:
+                logger.info(f"PLC实例创建成功: {self.device.name} ({self.device.plc_type})")
             else:
-                # 默认使用Modbus TCP（比欧姆龙更通用）
-                logger.warning(f"未知的PLC型号 {self.device.plc_type}，使用默认Modbus TCP配置")
-                self.plc = ModbusTcpNet()
-                self.plc.IpAddress = self.device.ip_address
-                self.plc.Port = self.device.port
-            
-            logger.info(f"PLC实例创建成功: {self.device.name} ({self.device.plc_type})")
-            
+                self.last_error = self.protocol_handler.last_error
+                logger.error(f"PLC实例创建失败 {self.device.name}: {self.last_error}")
         except Exception as e:
             logger.error(f"创建PLC实例失败 {self.device.name}: {e}")
             self.last_error = str(e)
     
     def connect(self) -> bool:
-        """连接PLC"""
+        """连接PLC（使用协议处理器）"""
         with self._lock:
             try:
-                if not self.plc:
-                    self.last_error = "PLC实例未创建"
-                    return False
-
                 # 设置连接超时，避免长时间阻塞
                 connect_thread = threading.Thread(target=self._connect_sync)
                 connect_thread.daemon = True
@@ -165,75 +94,44 @@ class PLCConnection:
                 return False
 
     def _connect_sync(self):
-        """同步连接方法"""
+        """同步连接方法（使用协议处理器）"""
         try:
-            connect_result = self.plc.ConnectServer()
-            if connect_result.IsSuccess:
-                self.is_connected = True
+            success = self.protocol_handler.connect()
+            self.is_connected = success
+            if success:
                 self.last_error = None
                 logger.info(f"PLC连接成功: {self.device.name}")
             else:
-                self.is_connected = False
-                self.last_error = connect_result.Message
-                logger.error(f"PLC连接失败 {self.device.name}: {connect_result.Message}")
-                from database import db_manager
-                db_manager.write_communication_error(self.device.id, self.device.name, connect_result.Message)
+                self.last_error = self.protocol_handler.last_error
+                logger.error(f"PLC连接失败 {self.device.name}: {self.last_error}")
         except Exception as e:
             self.is_connected = False
             self.last_error = str(e)
             logger.error(f"PLC连接异常 {self.device.name}: {e}")
             from database import db_manager
             db_manager.write_communication_error(self.device.id, self.device.name, str(e))
-    
+
     def disconnect(self):
-        """断开PLC连接"""
+        """断开PLC连接（使用协议处理器）"""
         with self._lock:
             try:
-                if self.plc and self.is_connected:
-                    self.plc.ConnectClose()
-                    self.is_connected = False
-                    logger.info(f"PLC断开连接: {self.device.name}")
+                self.protocol_handler.disconnect()
+                self.is_connected = False
+                logger.info(f"PLC断开连接: {self.device.name}")
             except Exception as e:
                 logger.error(f"断开PLC连接失败 {self.device.name}: {e}")
-    
+
     def update_timeouts(self, connect_timeout: int, receive_timeout: int):
-        """更新连接和接收超时配置"""
+        """更新连接和接收超时配置（使用协议处理器）"""
         try:
-            if not self.plc:
-                return
-
-            plc_type_lower = self.device.plc_type.lower()
-
-            # Modbus设备直接设置超时
-            if any(modbus_type in plc_type_lower for modbus_type in [
-                'modbus', 'mb_', 'mbtcp', 'mbrtu', 'mb-rtu'
-            ]):
-                if hasattr(self.plc, 'ConnectTimeOut'):
-                    self.plc.ConnectTimeOut = connect_timeout
-                if hasattr(self.plc, 'ReceiveTimeOut'):
-                    self.plc.ReceiveTimeOut = receive_timeout
-
-            # 欧姆龙设备通过通信管道设置超时
-            elif 'omron' in plc_type_lower or '欧姆龙' in plc_type_lower:
-                if hasattr(self.plc, 'CommunicationPipe') and self.plc.CommunicationPipe:
-                    self.plc.CommunicationPipe.ConnectTimeOut = connect_timeout
-                    self.plc.CommunicationPipe.ReceiveTimeOut = receive_timeout
-
-            # 西门子设备直接设置超时
-            elif 'siemens' in plc_type_lower or '西门子' in plc_type_lower:
-                if hasattr(self.plc, 'ConnectTimeOut'):
-                    self.plc.ConnectTimeOut = connect_timeout
-                if hasattr(self.plc, 'ReceiveTimeOut'):
-                    self.plc.ReceiveTimeOut = receive_timeout
-
+            self.protocol_handler.update_timeouts(connect_timeout, receive_timeout)
             logger.info(f"更新PLC超时配置 {self.device.name}: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
-
         except Exception as e:
             logger.error(f"更新PLC超时配置失败 {self.device.name}: {e}")
-    
-    def read_addresses(self, addresses: List[str]) -> tuple[Dict[str, Optional[float]], bool]:
-        """批量读取地址数据
-        
+
+    def read_addresses(self, addresses: List[str], address_configs: Optional[List[dict]] = None) -> tuple[Dict[str, Optional[float]], bool]:
+        """批量读取地址数据（使用协议处理器）
+
         Returns:
             tuple: (数据字典, 是否在线)
                 - 数据字典: {地址: 值}
@@ -242,76 +140,41 @@ class PLCConnection:
         if not self.is_connected:
             logger.warning(f"PLC未连接，无法读取数据: {self.device.name}")
             return {addr: None for addr in addresses}, False
-        
+
         with self._lock:
             try:
-                chunk_size = 10  # 每次读取的地址数量
-                all_values = {}
-                has_network_communication = False  # 是否有网络通信
-                
-                for i in range(0, len(addresses), chunk_size):
-                    chunk_addresses = addresses[i:i + chunk_size]
-                    
-                    # 读取数据
-                    read_result = self.plc.Read(chunk_addresses)
-                    
-                    if read_result.IsSuccess:
-                        # 读取成功，说明网络通信正常，PLC在线
-                        has_network_communication = True
-                        try:
-                            # 解析数据
-                            values = self.plc.ByteTransform.TransInt16(
-                                read_result.Content, 0, len(chunk_addresses)
-                            )
-                            
-                            if values:
-                                for idx, addr in enumerate(chunk_addresses):
-                                    all_values[addr] = float(values[idx])
-                            else:
-                                for addr in chunk_addresses:
-                                    all_values[addr] = None
-                                    
-                        except Exception as e:
-                            logger.error(f"解析数据失败 {self.device.name}: {e}")
-                            for addr in chunk_addresses:
-                                all_values[addr] = None
-                    else:
-                        # 读取失败，需要判断是网络问题还是地址问题
-                        error_msg = read_result.Message.lower() if read_result.Message else ""
-                        
-                        # 检查是否为网络相关错误
-                        network_errors = [
-                            'timeout', 'connection', 'network', 'socket', 
-                            'unreachable', 'refused', 'reset', 'closed'
-                        ]
-                        
-                        is_network_error = any(err in error_msg for err in network_errors)
-                        
-                        if is_network_error:
-                            # 网络错误，认为PLC离线
-                            logger.error(f"网络通信失败 {self.device.name}: {read_result.Message}")
-                            for addr in chunk_addresses:
-                                all_values[addr] = None
-                        else:
-                            # 非网络错误（如地址错误、权限问题等），认为PLC在线但数据读取失败
-                            has_network_communication = True
-                            logger.warning(f"数据读取失败但PLC在线 {self.device.name}: {read_result.Message}")
-                            for addr in chunk_addresses:
-                                all_values[addr] = None
-                
+                # 使用协议处理器读取数据（传递地址配置以支持不同数据类型）
+                values, is_online = self.protocol_handler.read_addresses(addresses, address_configs)
+
                 # 更新连接状态
-                self.is_connected = has_network_communication
-                if not has_network_communication:
-                    self.last_error = "网络通信失败"
-                
-                return all_values, has_network_communication
-                
+                self.is_connected = is_online
+                if not is_online:
+                    self.last_error = self.protocol_handler.last_error or "网络通信失败"
+
+                return values, is_online
+
             except Exception as e:
                 # 异常情况，通常是网络问题，认为PLC离线
                 logger.error(f"读取地址数据异常 {self.device.name}: {e}")
                 self.is_connected = False
                 self.last_error = str(e)
                 return {addr: None for addr in addresses}, False
+
+    def write_address(self, address: str, value: float) -> bool:
+        """写入单个地址数据（使用协议处理器）"""
+        with self._lock:
+            try:
+                success = self.protocol_handler.write_address(address, value)
+                if success:
+                    logger.info(f"写入数据成功 {self.device.name}: {address} = {value}")
+                else:
+                    self.last_error = self.protocol_handler.last_error
+                    logger.error(f"写入数据失败 {self.device.name}: {self.last_error}")
+                return success
+            except Exception as e:
+                logger.error(f"写入地址数据异常 {self.device.name}: {e}")
+                self.last_error = str(e)
+                return False
 
 class PLCCollector:
     """PLC数据采集器（兼容原有接口）"""
@@ -669,17 +532,17 @@ class PLCCollector:
             logger.info(f"采集任务完成，执行时间: {execution_time:.2f}秒")
     
     def _collect_device_data(self, device: Device):
-        """采集单个设备数据"""
+        """采集单个设备数据（支持增强的地址配置）"""
         try:
             # 获取设备基本信息，避免会话绑定问题
             device_id = device.id
             device_name = device.name
-            
+
             connection = self.connections.get(device_id)
             if not connection:
                 logger.warning(f"设备连接不存在: {device_name}")
                 return
-            
+
             # 如果连接断开，尝试重连
             if not connection.is_connected:
                 if not connection.connect():
@@ -688,28 +551,106 @@ class PLCCollector:
                     # 将通信异常记录到InfluxDB
                     db_manager.write_communication_error(device_id, device_name, connection.last_error)
                     return
-            
-            # 获取采集地址
-            addresses = device.get_addresses()
-            if not addresses:
+
+            # 获取地址配置
+            address_configs = device.get_address_configs()
+            if not address_configs:
                 logger.warning(f"设备 {device_name} 没有配置采集地址")
                 return
-            
-            # 读取数据
-            values, is_online = connection.read_addresses(addresses)
-            
+
+            # 构建地址列表用于读取
+            addresses = [config['address'] for config in address_configs]
+
+            # 记录采集开始时间
+            start_time = datetime.now()
+
+            # 读取数据（传递地址配置以支持不同数据类型）
+            values, is_online = connection.read_addresses(addresses, address_configs)
+
             # 存储数据到InfluxDB
             success_count = 0
-            for address, value in values.items():
-                if value is not None:
-                    if db_manager.write_plc_data(
-                        device_id=device_id,
-                        device_name=device_name,
-                        address=address,
-                        value=value
-                    ):
-                        success_count += 1
-            
+            batch_data_points = []
+
+            for config in address_configs:
+                address = config['address']
+                raw_value = values.get(address)
+
+                if raw_value is not None:
+                    try:
+                        # 应用数据缩放（如果配置了缩放）
+                        scaled_value = raw_value
+                        if config.get('scaling', {}).get('enabled', False):
+                            scaling = config['scaling']
+                            input_min = scaling.get('inputMin', 0)
+                            input_max = scaling.get('inputMax', 100)
+                            output_min = scaling.get('outputMin', 0)
+                            output_max = scaling.get('outputMax', 10)
+
+                            # 线性缩放计算
+                            if input_max != input_min:
+                                scaled_value = output_min + (raw_value - input_min) * (output_max - output_min) / (input_max - input_min)
+                            else:
+                                scaled_value = raw_value
+
+                        # 计算响应时间
+                        response_time = (datetime.now() - start_time).total_seconds() * 1000  # 转换为毫秒
+
+                        # 准备元数据
+                        metadata = {
+                            'stationId': config.get('stationId', 1),
+                            'registerType': config.get('registerType', 'holding'),
+                            'functionCode': config.get('functionCode', 3),
+                            'dataType': config.get('type', 'int16'),
+                            'unit': config.get('unit', ''),
+                            'rawValue': raw_value,
+                            'scaledValue': scaled_value,
+                            'scanRate': config.get('scanRate', 1000),
+                            'byteOrder': config.get('byteOrder', 'CDAB'),
+                            'wordSwap': config.get('wordSwap', False),
+                            'quality': 'good',
+                            'responseTime': response_time,
+                            'addressName': config.get('name', ''),
+                            'description': config.get('description', '')
+                        }
+
+                        # 使用增强的写入方法
+                        if db_manager.write_enhanced_plc_data(
+                            device_id=device_id,
+                            device_name=device_name,
+                            address_config=config,
+                            raw_value=raw_value,
+                            scaled_value=scaled_value,
+                            timestamp=start_time,
+                            response_time=response_time
+                        ):
+                            success_count += 1
+
+                        # 如果是批量数据量大的设备，可以考虑批量写入
+                        if len(address_configs) <= 10:  # 少量数据直接写入
+                            pass  # 已经在上面写入
+                        else:  # 大量数据准备批量写入
+                            batch_data_points.append({
+                                'address': address,
+                                'value': scaled_value,
+                                'timestamp': start_time,
+                                'metadata': metadata
+                            })
+
+                    except Exception as e:
+                        logger.error(f"处理地址 {address} 数据失败: {e}")
+                        continue
+                else:
+                    logger.warning(f"地址 {address} 读取失败，值为None")
+
+            # 如果有批量数据，执行批量写入
+            if batch_data_points and len(address_configs) > 10:
+                if db_manager.write_batch_plc_data(
+                    device_id=device_id,
+                    device_name=device_name,
+                    data_points=batch_data_points
+                ):
+                    success_count += len(batch_data_points)
+
             # 更新设备最后采集时间和在线状态
             with db_manager.get_db() as db:
                 db_device = db.query(Device).filter(Device.id == device_id).first()
@@ -723,23 +664,26 @@ class PLCCollector:
                     else:
                         db_device.status = 'offline'
                     db.commit()
-            
+
             # 记录采集日志
+            total_addresses = len(address_configs)
             if success_count > 0:
                 self._log_collect_result(
-                    device.id, 
-                    "success", 
-                    f"成功采集 {success_count}/{len(addresses)} 个地址"
+                    device.id,
+                    "success",
+                    f"成功采集 {success_count}/{total_addresses} 个地址"
                 )
             else:
                 self._log_collect_result(
-                    device.id, 
-                    "failed", 
-                    "所有地址采集失败"
+                    device.id,
+                    "failed",
+                    f"所有{total_addresses}个地址采集失败"
                 )
-            
-            logger.debug(f"设备 {device.name} 数据采集完成: {success_count}/{len(addresses)}")
-            
+
+            # 记录采集统计信息
+            collect_time = (datetime.now() - start_time).total_seconds()
+            logger.debug(f"设备 {device.name} 数据采集完成: {success_count}/{total_addresses} 个地址，耗时 {collect_time:.2f}秒")
+
         except Exception as e:
             logger.error(f"采集设备 {device.name} 数据异常: {e}")
             self._log_collect_result(device.id, "error", str(e))

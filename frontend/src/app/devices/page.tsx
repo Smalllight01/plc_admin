@@ -71,6 +71,7 @@ import {
   Loader,
 } from 'lucide-react'
 import { AddressConfig, type AddressConfig as AddressConfigType } from '@/components/device/address-config'
+import { ModbusAddressConfig, type ModbusAddressConfig as ModbusAddressConfigType } from '@/components/device/modbus-address-config'
 
 /**
  * 设备管理页面组件
@@ -89,7 +90,7 @@ export default function DevicesPage() {
     protocol: 'TCP',
     ip_address: '',
     port: 502,
-    addresses: [] as AddressConfigType[],
+    addresses: [] as AddressConfigType[] | ModbusAddressConfigType[],
     group_id: 1,
     is_active: true,
     description: '',
@@ -200,6 +201,13 @@ export default function DevicesPage() {
       })
     },
   })
+
+  /**
+   * 判断是否为Modbus设备
+   */
+  const isModbusDevice = (plcType: string) => {
+    return plcType.toLowerCase().includes('modbus')
+  }
 
   /**
    * 重置表单
@@ -661,9 +669,9 @@ export default function DevicesPage() {
                       <SelectContent>
                         <SelectItem value="ModbusTCP">Modbus TCP</SelectItem>
                         <SelectItem value="ModbusRTU">Modbus RTU</SelectItem>
+                        <SelectItem value="ModbusRTU_Over_TCP">Modbus RTU over TCP</SelectItem>
                         <SelectItem value="Siemens">Siemens S7</SelectItem>
-                        <SelectItem value="Mitsubishi">Mitsubishi</SelectItem>
-                        <SelectItem value="Omron">Omron</SelectItem>
+                        <SelectItem value="Omron">Omron Fins</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -755,12 +763,28 @@ export default function DevicesPage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
-                    <Label className="text-base font-medium">地址配置</Label>
+                    <Label className="text-base font-medium">
+                      地址配置
+                      {isModbusDevice(formData.plc_type) && (
+                        <Badge variant="secondary" className="ml-2">
+                          Modbus增强
+                        </Badge>
+                      )}
+                    </Label>
                   </div>
-                  <AddressConfig
-                    value={formData.addresses}
-                    onChange={(addresses) => setFormData({ ...formData, addresses })}
-                  />
+                  {isModbusDevice(formData.plc_type) ? (
+                    <ModbusAddressConfig
+                      value={formData.addresses as ModbusAddressConfigType[]}
+                      onChange={(addresses) => setFormData({ ...formData, addresses })}
+                      plcType={formData.plc_type}
+                    />
+                  ) : (
+                    <AddressConfig
+                      value={formData.addresses}
+                      onChange={(addresses) => setFormData({ ...formData, addresses })}
+                      plcType={formData.plc_type}
+                    />
+                  )}
                 </div>
                 
                 <DialogFooter className="pt-6">

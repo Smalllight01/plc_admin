@@ -127,10 +127,120 @@ class Device(Base):
                 return addresses_data
         except (json.JSONDecodeError, IndexError, TypeError):
             return []
-    
+
+    def get_address_configs(self):
+        """获取完整的地址配置列表（返回配置对象列表）"""
+        try:
+            addresses_data = json.loads(self.addresses) if self.addresses else []
+
+            # 处理新格式（对象列表）
+            if addresses_data and isinstance(addresses_data[0], dict):
+                # 标准化地址配置，确保所有必要字段都存在
+                normalized_addresses = []
+                for addr in addresses_data:
+                    # 处理Modbus新格式
+                    if 'stationId' in addr or 'functionCode' in addr:
+                        normalized_addr = {
+                            'id': addr.get('id', str(hash(addr.get('address', '')))),
+                            'name': addr.get('name', ''),
+                            'address': addr.get('address', ''),
+                            'type': addr.get('type', 'int16'),
+                            'unit': addr.get('unit', ''),
+                            'description': addr.get('description', ''),
+                            # Modbus特定字段
+                            'stationId': addr.get('stationId', 1),
+                            'functionCode': addr.get('functionCode', 3),
+                            'registerType': addr.get('registerType', 'holding'),
+                            'byteOrder': addr.get('byteOrder', 'CDAB'),
+                            'wordSwap': addr.get('wordSwap', False),
+                            'scanRate': addr.get('scanRate', 1000),
+                            'scaling': addr.get('scaling', {
+                                'enabled': False,
+                                'inputMin': 0,
+                                'inputMax': 100,
+                                'outputMin': 0,
+                                'outputMax': 10
+                            })
+                        }
+                    else:
+                        # 处理旧格式，转换为新格式
+                        normalized_addr = {
+                            'id': addr.get('id', str(hash(addr.get('address', '')))),
+                            'name': addr.get('name', ''),
+                            'address': addr.get('address', ''),
+                            'type': addr.get('type', 'int16'),
+                            'unit': addr.get('unit', ''),
+                            'description': addr.get('description', ''),
+                            # 默认Modbus配置
+                            'stationId': 1,
+                            'functionCode': 3,
+                            'registerType': 'holding',
+                            'byteOrder': 'CDAB',
+                            'wordSwap': False,
+                            'scanRate': 1000,
+                            'scaling': {
+                                'enabled': False,
+                                'inputMin': 0,
+                                'inputMax': 100,
+                                'outputMin': 0,
+                                'outputMax': 10
+                            }
+                        }
+                    normalized_addresses.append(normalized_addr)
+                return normalized_addresses
+
+            # 处理旧格式（字符串列表）
+            else:
+                normalized_addresses = []
+                for i, addr_str in enumerate(addresses_data):
+                    if addr_str:  # 确保地址不为空
+                        normalized_addr = {
+                            'id': f'legacy_{i}',
+                            'name': f'地址{i+1}',
+                            'address': addr_str,
+                            'type': 'int16',
+                            'unit': '',
+                            'description': '',
+                            # 默认Modbus配置
+                            'stationId': 1,
+                            'functionCode': 3,
+                            'registerType': 'holding',
+                            'byteOrder': 'CDAB',
+                            'wordSwap': False,
+                            'scanRate': 1000,
+                            'scaling': {
+                                'enabled': False,
+                                'inputMin': 0,
+                                'inputMax': 100,
+                                'outputMin': 0,
+                                'outputMax': 10
+                            }
+                        }
+                        normalized_addresses.append(normalized_addr)
+                return normalized_addresses
+
+        except (json.JSONDecodeError, IndexError, TypeError) as e:
+            logger.error(f"解析地址配置失败: {e}")
+            return []
+
     def set_addresses(self, addresses_list):
         """设置采集地址列表"""
         self.addresses = json.dumps(addresses_list)
+
+    def is_modbus_device(self):
+        """判断是否为Modbus设备"""
+        return self.plc_type.lower().startswith('modbus')
+
+    def get_station_ids(self):
+        """获取设备配置中的所有站号"""
+        if not self.is_modbus_device():
+            return [1]  # 非Modbus设备返回默认站号
+
+        configs = self.get_address_configs()
+        stations = set()
+        for config in configs:
+            stations.add(config.get('stationId', 1))
+        return sorted(list(stations))
     
     def to_dict(self):
         """转换为字典"""
