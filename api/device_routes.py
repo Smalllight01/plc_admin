@@ -40,6 +40,7 @@ class DeviceCreateRequest(BaseModel):
     port: int = 502
     addresses: List[dict]
     group_id: Optional[int] = None
+    byte_order: str = 'CDAB'
     description: Optional[str] = None
     is_active: bool = True
 
@@ -52,6 +53,7 @@ class DeviceUpdateRequest(BaseModel):
     port: Optional[int] = None
     addresses: Optional[List[dict]] = None
     group_id: Optional[int] = None
+    byte_order: Optional[str] = None
     description: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -201,6 +203,7 @@ async def create_device(
                 port=device_data.port,
                 addresses=json.dumps(device_data.addresses),
                 group_id=device_data.group_id,
+                byte_order=device_data.byte_order,
                 description=device_data.description,
                 is_active=device_data.is_active
             )

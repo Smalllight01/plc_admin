@@ -37,7 +37,7 @@ export const PROTOCOL_CONFIGS: Record<string, ProtocolConfig> = {
   modbus_tcp: {
     type: 'modbus_tcp',
     name: 'ModbusTCP',
-    description: '基于TCP/IP的Modbus协议',
+    description: '基于TCP/IP的Modbus协议 - 一个IP对应一个站号，支持多个地址',
     defaultPort: 502,
     fields: [
       {
@@ -63,91 +63,10 @@ export const PROTOCOL_CONFIGS: Record<string, ProtocolConfig> = {
       }
     ]
   },
-  modbus_rtu: {
-    type: 'modbus_rtu',
-    name: 'ModbusRTU',
-    description: '基于串口的Modbus协议',
-    defaultPort: 0,
-    fields: [
-      {
-        name: 'com_name',
-        label: '串口',
-        type: 'select',
-        defaultValue: 'COM1',
-        options: [
-          { value: 'COM1', label: 'COM1' },
-          { value: 'COM2', label: 'COM2' },
-          { value: 'COM3', label: 'COM3' },
-          { value: 'COM4', label: 'COM4' },
-          { value: 'COM5', label: 'COM5' }
-        ],
-        required: true
-      },
-      {
-        name: 'baud_rate',
-        label: '波特率',
-        type: 'select',
-        defaultValue: 9600,
-        options: [
-          { value: 1200, label: '1200' },
-          { value: 2400, label: '2400' },
-          { value: 4800, label: '4800' },
-          { value: 9600, label: '9600 (推荐)' },
-          { value: 19200, label: '19200' },
-          { value: 38400, label: '38400' },
-          { value: 57600, label: '57600' },
-          { value: 115200, label: '115200' }
-        ],
-        required: true
-      },
-      {
-        name: 'data_bits',
-        label: '数据位',
-        type: 'select',
-        defaultValue: 8,
-        options: [
-          { value: 7, label: '7' },
-          { value: 8, label: '8 (推荐)' }
-        ],
-        required: true
-      },
-      {
-        name: 'parity',
-        label: '校验位',
-        type: 'select',
-        defaultValue: 'N',
-        options: [
-          { value: 'N', label: '无校验 (N)' },
-          { value: 'E', label: '偶校验 (E)' },
-          { value: 'O', label: '奇校验 (O)' }
-        ],
-        required: true
-      },
-      {
-        name: 'stop_bits',
-        label: '停止位',
-        type: 'select',
-        defaultValue: 1,
-        options: [
-          { value: 1, label: '1 (推荐)' },
-          { value: 2, label: '2' }
-        ],
-        required: true
-      },
-      {
-        name: 'station',
-        label: '站号',
-        type: 'number',
-        defaultValue: 1,
-        required: true,
-        placeholder: '1-247'
-      }
-    ]
-  },
   modbus_rtu_over_tcp: {
     type: 'modbus_rtu_over_tcp',
     name: 'ModbusRTUOverTCP',
-    description: '串口转网口的Modbus协议',
+    description: '串口转网口的Modbus协议 - 一个IP对应多个站号，每个站号支持多个地址',
     defaultPort: 502,
     fields: [
       {
@@ -353,19 +272,27 @@ export function AddressFormatHelp({ protocolType }: { protocolType?: string }) {
   const getAddressHelp = () => {
     switch (protocolType) {
       case 'modbus_tcp':
-      case 'modbus_rtu':
+        return {
+          title: 'ModbusTCP地址格式 - 一个IP对应一个站号',
+          formats: [
+            { format: '100', description: '保持寄存器地址100' },
+            { format: '40001', description: '保持寄存器地址1' },
+            { format: 'x=1;200', description: '读取线圈地址200' },
+            { format: 'x=2;300', description: '读取输入线圈地址300' },
+            { format: 'x=3;400', description: '读取保持寄存器地址400' },
+            { format: 'x=4;500', description: '读取输入寄存器地址500' }
+          ]
+        }
       case 'modbus_rtu_over_tcp':
         return {
-          title: 'Modbus地址格式',
+          title: 'ModbusRTUOverTCP地址格式 - 一个IP对应多个站号',
           formats: [
-            { format: '100', description: '简单保持寄存器（功能码03）' },
-            { format: 's=1;100', description: '站号1的保持寄存器' },
-            { format: 's=2;101', description: '站号2的保持寄存器' },
-            { format: 'x=1;200', description: '读取线圈（功能码01）' },
-            { format: 'x=2;300', description: '读取输入线圈（功能码02）' },
-            { format: 'x=3;400', description: '读取保持寄存器（功能码03）' },
-            { format: 'x=4;500', description: '读取输入寄存器（功能码04）' },
-            { format: 's=2;x=4;600', description: '站号2，功能码04，地址600' }
+            { format: 's=1;100', description: '站号1的保持寄存器地址100' },
+            { format: 's=2;101', description: '站号2的保持寄存器地址101' },
+            { format: 's=1;x=3;400', description: '站号1，保持寄存器地址400' },
+            { format: 's=2;x=4;500', description: '站号2，输入寄存器地址500' },
+            { format: 's=3;x=1;200', description: '站号3，线圈地址200' },
+            { format: 's=4;x=2;300', description: '站号4，输入线圈地址300' }
           ]
         }
       case 'omron_fins':

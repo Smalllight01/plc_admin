@@ -406,7 +406,8 @@ class PLCCollector:
                         'ip_address': device.ip_address,
                         'port': device.port,
                         'addresses': device.addresses,
-                        'group_id': device.group_id
+                        'group_id': device.group_id,
+                        'byte_order': device.byte_order
                     })
                 
                 # 按组别和设备ID排序，确保连接的优先级
@@ -434,7 +435,8 @@ class PLCCollector:
                             ip_address=data['ip_address'],
                             port=data['port'],
                             addresses=data['addresses'],
-                            group_id=data['group_id']
+                            group_id=data['group_id'],
+                            byte_order=data['byte_order']
                         )
                         
                         connection = PLCConnection(device_obj)

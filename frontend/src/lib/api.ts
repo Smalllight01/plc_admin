@@ -184,6 +184,7 @@ export interface Device {
   is_connected: boolean
   last_collect_time?: string
   description?: string
+  byte_order?: string
   created_at: string
   updated_at: string
   status?: 'online' | 'offline' | 'error' | 'connecting'
@@ -330,6 +331,7 @@ export interface CreateDeviceRequest {
   group_id?: number | null
   is_active?: boolean
   description?: string
+  byte_order?: string
 }
 
 // 更新设备请求类型
@@ -343,6 +345,7 @@ export interface UpdateDeviceRequest {
   group_id?: number | null
   is_active?: boolean
   description?: string
+  byte_order?: string
 }
 
 // 数据查询参数类型

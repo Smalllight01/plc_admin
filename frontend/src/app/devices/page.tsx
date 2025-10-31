@@ -45,6 +45,17 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { Device, Group, CreateDeviceRequest, UpdateDeviceRequest } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
+
+/**
+ * 字节顺序选项
+ */
+const BYTE_ORDER_OPTIONS = [
+  { value: 'ABCD', label: 'ABCD (标准)' },
+  { value: 'BADC', label: 'BADC' },
+  { value: 'CDAB', label: 'CDAB (常用)' },
+  { value: 'DCBA', label: 'DCBA' },
+]
+
 import {
   Plus,
   Edit,
@@ -71,7 +82,6 @@ import {
   Loader,
 } from 'lucide-react'
 import { AddressConfig, type AddressConfig as AddressConfigType } from '@/components/device/address-config'
-import { ModbusAddressConfig, type ModbusAddressConfig as ModbusAddressConfigType } from '@/components/device/modbus-address-config'
 
 /**
  * 设备管理页面组件
@@ -86,14 +96,16 @@ export default function DevicesPage() {
   const [editingDevice, setEditingDevice] = useState<Device | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    plc_type: 'ModbusTCP',
+    plc_type: 'modbus_tcp',
     protocol: 'TCP',
     ip_address: '',
     port: 502,
-    addresses: [] as AddressConfigType[] | ModbusAddressConfigType[],
+    addresses: [] as AddressConfigType[],
     group_id: 1,
     is_active: true,
     description: '',
+    stationId: 1,
+    byteOrder: 'CDAB', // 字节顺序配置
   })
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -215,7 +227,7 @@ export default function DevicesPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      plc_type: 'ModbusTCP',
+      plc_type: 'modbus_tcp',
       protocol: 'TCP',
       ip_address: '',
       port: 502,
@@ -223,6 +235,8 @@ export default function DevicesPage() {
       group_id: 1,
       is_active: true,
       description: '',
+      stationId: 1,
+      byteOrder: 'CDAB',
     })
   }
 
@@ -231,28 +245,39 @@ export default function DevicesPage() {
    */
   const handleEditDevice = (device: Device) => {
     setEditingDevice(device)
+
+    // 解析地址数据
+    const parsedAddresses = (() => {
+      if (!device.addresses) return []
+      if (Array.isArray(device.addresses)) return device.addresses
+      if (typeof device.addresses === 'string') {
+        try {
+          return JSON.parse(device.addresses)
+        } catch (error) {
+          console.error('Failed to parse device addresses:', error)
+          return []
+        }
+      }
+      return []
+    })()
+
+    // 提取站号（从第一个地址获取，或默认1）
+    const stationId = parsedAddresses.length > 0 ? (parsedAddresses[0] as any)?.stationId || 1 : 1
+    // 使用设备级别的字节顺序配置
+    const byteOrder = device.byte_order || 'CDAB'
+
     setFormData({
       name: device.name,
       plc_type: device.plc_type,
       protocol: device.protocol,
       ip_address: device.ip_address,
       port: device.port,
-      addresses: (() => {
-        if (!device.addresses) return []
-        if (Array.isArray(device.addresses)) return device.addresses
-        if (typeof device.addresses === 'string') {
-          try {
-            return JSON.parse(device.addresses)
-          } catch (error) {
-            console.error('Failed to parse device addresses:', error)
-            return []
-          }
-        }
-        return []
-      })(),
+      addresses: parsedAddresses,
       group_id: device.group_id !== null ? device.group_id : 1,
       is_active: device.is_active,
       description: device.description || '',
+      stationId,
+      byteOrder,
     })
     setShowEditDialog(true)
   }
@@ -271,18 +296,38 @@ export default function DevicesPage() {
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 处理地址数据 - 对于Modbus设备，应用统一的字节顺序
+    let processedAddresses = formData.addresses
+    if (isModbusDevice(formData.plc_type)) {
+      processedAddresses = formData.addresses.map((addr: any) => ({
+        ...addr,
+        byteOrder: formData.byteOrder
+      }))
+    }
+
+    // 对于ModbusTCP，应用统一的站号
+    if (formData.plc_type === 'modbus_tcp' && formData.stationId) {
+      processedAddresses = processedAddresses.map((addr: any) => ({
+        ...addr,
+        stationId: formData.stationId
+      }))
+    }
+
     if (editingDevice) {
       updateDeviceMutation.mutate({
         id: editingDevice.id,
         data: {
           ...formData,
-          addresses: JSON.stringify(formData.addresses),
+          addresses: JSON.stringify(processedAddresses),
+          byte_order: formData.byteOrder,
         },
       })
     } else {
       createDeviceMutation.mutate({
         ...formData,
-        addresses: JSON.stringify(formData.addresses),
+        addresses: JSON.stringify(processedAddresses),
+        byte_order: formData.byteOrder,
       })
     }
   }
@@ -667,11 +712,10 @@ export default function DevicesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ModbusTCP">Modbus TCP</SelectItem>
-                        <SelectItem value="ModbusRTU">Modbus RTU</SelectItem>
-                        <SelectItem value="ModbusRTU_Over_TCP">Modbus RTU over TCP</SelectItem>
-                        <SelectItem value="Siemens">Siemens S7</SelectItem>
-                        <SelectItem value="Omron">Omron Fins</SelectItem>
+                        <SelectItem value="modbus_tcp">Modbus TCP</SelectItem>
+                        <SelectItem value="modbus_rtu_over_tcp">Modbus RTU over TCP</SelectItem>
+                        <SelectItem value="siemens_s7">Siemens S7</SelectItem>
+                        <SelectItem value="omron_fins">Omron Fins</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -736,6 +780,27 @@ export default function DevicesPage() {
                   </div>
                 </div>
                 
+                {/* 字节顺序配置 - 针对整个IP设备 */}
+                <div className="space-y-2">
+                  <Label htmlFor="byteOrder">字节顺序 *</Label>
+                  <Select
+                    value={formData.byteOrder || 'CDAB'}
+                    onValueChange={(value: string) => setFormData({ ...formData, byteOrder: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BYTE_ORDER_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">字节顺序是针对整个IP设备的配置，所有地址共享此设置</p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">设备描述</Label>
                   <Textarea
@@ -759,32 +824,40 @@ export default function DevicesPage() {
                   </Label>
                 </div>
                 
+                {/* ModbusTCP站号配置 - 在地址配置上方 */}
+                {formData.plc_type === 'modbus_tcp' && (
+                  <div className="space-y-4 border-b pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="station_id" className="text-base font-medium">ModbusTCP站号配置</Label>
+                      <Input
+                        id="station_id"
+                        type="number"
+                        min="1"
+                        max="247"
+                        value={formData.stationId || 1}
+                        onChange={(e) => setFormData({ ...formData, stationId: parseInt(e.target.value) || 1 })}
+                        placeholder="1"
+                        required
+                        className="max-w-xs"
+                      />
+                      <p className="text-sm text-gray-500">ModbusTCP设备使用单个站号，所有地址共享此站号</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* 地址配置 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     <Label className="text-base font-medium">
                       地址配置
-                      {isModbusDevice(formData.plc_type) && (
-                        <Badge variant="secondary" className="ml-2">
-                          Modbus增强
-                        </Badge>
-                      )}
                     </Label>
                   </div>
-                  {isModbusDevice(formData.plc_type) ? (
-                    <ModbusAddressConfig
-                      value={formData.addresses as ModbusAddressConfigType[]}
-                      onChange={(addresses) => setFormData({ ...formData, addresses })}
-                      plcType={formData.plc_type}
-                    />
-                  ) : (
-                    <AddressConfig
-                      value={formData.addresses}
-                      onChange={(addresses) => setFormData({ ...formData, addresses })}
-                      plcType={formData.plc_type}
-                    />
-                  )}
+                  <AddressConfig
+                    value={formData.addresses}
+                    onChange={(addresses) => setFormData({ ...formData, addresses })}
+                    plcType={formData.plc_type}
+                  />
                 </div>
                 
                 <DialogFooter className="pt-6">

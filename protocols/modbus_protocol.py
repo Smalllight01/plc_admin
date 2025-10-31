@@ -76,10 +76,22 @@ class ModbusProtocolHandler(BaseProtocolHandler):
             self.plc.IpAddress = self.device.ip_address
             self.plc.Port = self.device.port
 
-            # 设置数据格式（默认使用CDAB，这是大多数设备的格式）
+            # 设置数据格式（从设备配置中获取字节顺序）
             try:
-                self.plc.DataFormat = DataFormat.CDAB
-                logger.debug(f"设置Modbus数据格式为CDAB: {self.device.name}")
+                # 从设备级别获取字节顺序配置
+                device_byte_order = getattr(self.device, 'byte_order', 'CDAB')
+
+                # 映射字节顺序到DataFormat
+                byte_order_mapping = {
+                    'ABCD': DataFormat.ABCD,
+                    'BADC': DataFormat.BADC,
+                    'CDAB': DataFormat.CDAB,
+                    'DCBA': DataFormat.DCBA
+                }
+
+                data_format = byte_order_mapping.get(device_byte_order, DataFormat.CDAB)
+                self.plc.DataFormat = data_format
+                logger.info(f"设置Modbus数据格式为{device_byte_order}: {self.device.name}")
             except Exception as e:
                 logger.warning(f"设置数据格式失败 {self.device.name}: {e}")
 

@@ -46,8 +46,21 @@ class OmronProtocolHandler(BaseProtocolHandler):
             self.plc.PlcType = OmronPlcType.CSCJ
             self.plc.DA2 = 0
             self.plc.ReceiveUntilEmpty = False
-            self.plc.ByteTransform.DataFormat = DataFormat.CDAB
+            # 设置数据格式（从设备配置中获取字节顺序）
+            device_byte_order = getattr(self.device, 'byte_order', 'CDAB')
+
+            # 映射字节顺序到DataFormat
+            byte_order_mapping = {
+                'ABCD': DataFormat.ABCD,
+                'BADC': DataFormat.BADC,
+                'CDAB': DataFormat.CDAB,
+                'DCBA': DataFormat.DCBA
+            }
+
+            data_format = byte_order_mapping.get(device_byte_order, DataFormat.CDAB)
+            self.plc.ByteTransform.DataFormat = data_format
             self.plc.ByteTransform.IsStringReverseByteWord = True
+            logger.info(f"设置欧姆龙PLC数据格式为{device_byte_order}: {self.device.name}")
 
             # 设置通信管道
             pipe_tcp_net = PipeTcpNet(self.device.ip_address, self.device.port)
@@ -69,54 +82,95 @@ class OmronProtocolHandler(BaseProtocolHandler):
             return {addr: None for addr in addresses}, False
 
         try:
-            chunk_size = 10  # 每次读取的地址数量
             all_values = {}
             has_network_communication = False
 
-            for i in range(0, len(addresses), chunk_size):
-                chunk_addresses = addresses[i:i + chunk_size]
+            # 如果没有提供地址配置，创建默认配置
+            if address_configs is None:
+                address_configs = []
+                for addr in addresses:
+                    address_configs.append({
+                        'address': addr,
+                        'type': 'int16'
+                    })
 
-                # 读取数据
-                read_result = self.plc.Read(chunk_addresses)
+            # 逐个读取地址
+            for i, addr in enumerate(addresses):
+                try:
+                    config = address_configs[i] if i < len(address_configs) else {}
+                    data_type = config.get('type', 'int16')
+                    read_result = None
+                    value = None
 
-                if read_result.IsSuccess:
-                    has_network_communication = True
-                    try:
-                        # 解析数据
-                        values = self.plc.ByteTransform.TransInt16(
-                            read_result.Content, 0, len(chunk_addresses)
-                        )
-
-                        if values:
-                            for idx, addr in enumerate(chunk_addresses):
-                                all_values[addr] = float(values[idx])
-                        else:
-                            for addr in chunk_addresses:
-                                all_values[addr] = None
-
-                    except Exception as e:
-                        logger.error(f"解析欧姆龙PLC数据失败 {self.device.name}: {e}")
-                        for addr in chunk_addresses:
-                            all_values[addr] = None
-                else:
-                    # 检查是否为网络相关错误
-                    error_msg = read_result.Message.lower() if read_result.Message else ""
-                    network_errors = [
-                        'timeout', 'connection', 'network', 'socket',
-                        'unreachable', 'refused', 'reset', 'closed'
-                    ]
-
-                    is_network_error = any(err in error_msg for err in network_errors)
-
-                    if is_network_error:
-                        logger.error(f"欧姆龙PLC网络通信失败 {self.device.name}: {read_result.Message}")
-                        for addr in chunk_addresses:
-                            all_values[addr] = None
+                    # 根据数据类型选择读取方法
+                    if data_type == 'bool':
+                        read_result = self.plc.ReadBool(addr)
+                        if read_result.IsSuccess:
+                            value = float(1 if read_result.Content else 0)
+                    elif data_type == 'int16':
+                        read_result = self.plc.ReadInt16(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+                    elif data_type == 'uint16':
+                        read_result = self.plc.ReadUInt16(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+                    elif data_type == 'int32':
+                        read_result = self.plc.ReadInt32(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+                    elif data_type == 'uint32':
+                        read_result = self.plc.ReadUInt32(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+                    elif data_type == 'float':
+                        read_result = self.plc.ReadFloat(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+                    elif data_type == 'string':
+                        # 字符串读取需要长度参数，默认使用10
+                        string_length = config.get('stringLength', 10)
+                        read_result = self.plc.ReadString(addr, string_length)
+                        if read_result.IsSuccess:
+                            # 字符串转换为数值，这里可能需要特殊处理
+                            try:
+                                value = float(read_result.Content)
+                            except (ValueError, TypeError):
+                                # 如果不能转换为数值，记录日志并设为None
+                                logger.warning(f"字符串值无法转换为数值 {self.device.name}: {addr} = {read_result.Content}")
+                                value = None
                     else:
+                        # 默认使用Int16
+                        read_result = self.plc.ReadInt16(addr)
+                        if read_result.IsSuccess:
+                            value = float(read_result.Content)
+
+                    if read_result and read_result.IsSuccess:
+                        all_values[addr] = value
                         has_network_communication = True
-                        logger.warning(f"欧姆龙PLC数据读取失败但PLC在线 {self.device.name}: {read_result.Message}")
-                        for addr in chunk_addresses:
+                        logger.debug(f"读取成功 {self.device.name}: {addr} ({data_type}) = {value}")
+                    else:
+                        # 分析错误类型
+                        error_msg = read_result.Message.lower() if read_result and read_result.Message else ""
+                        network_errors = [
+                            'timeout', 'connection', 'network', 'socket',
+                            'unreachable', 'refused', 'reset', 'closed'
+                        ]
+
+                        is_network_error = any(err in error_msg for err in network_errors)
+
+                        if is_network_error:
+                            logger.error(f"欧姆龙PLC网络通信失败 {self.device.name}: {read_result.Message if read_result else '未知错误'}")
                             all_values[addr] = None
+                        else:
+                            # 非网络错误，可能是地址错误或权限问题
+                            has_network_communication = True
+                            logger.warning(f"欧姆龙PLC数据读取失败但PLC在线 {self.device.name} (地址{addr}, 类型{data_type}): {read_result.Message if read_result else '未知错误'}")
+                            all_values[addr] = None
+
+                except Exception as e:
+                    logger.error(f"读取地址{addr}时发生异常 {self.device.name}: {e}")
+                    all_values[addr] = None
 
             return all_values, has_network_communication
 

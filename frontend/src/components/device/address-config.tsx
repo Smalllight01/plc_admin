@@ -48,6 +48,7 @@ export interface AddressConfig {
   type?: string
   unit?: string
   description?: string
+  stationId?: number        // Modbus站号（仅用于ModbusRTUOverTCP）
 }
 
 /**
@@ -64,13 +65,12 @@ interface AddressConfigProps {
  * 数据类型选项
  */
 const DATA_TYPES = [
+  { value: 'bool', label: 'Boolean (布尔值)' },
   { value: 'int16', label: 'Int16 (16位整数)' },
   { value: 'uint16', label: 'UInt16 (16位无符号整数)' },
   { value: 'int32', label: 'Int32 (32位整数)' },
   { value: 'uint32', label: 'UInt32 (32位无符号整数)' },
   { value: 'float', label: 'Float (32位浮点数)' },
-  { value: 'double', label: 'Double (64位浮点数)' },
-  { value: 'bool', label: 'Boolean (布尔值)' },
   { value: 'string', label: 'String (字符串)' },
 ]
 
@@ -143,9 +143,10 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
   const [newAddress, setNewAddress] = useState<Partial<AddressConfig>>({
     name: '',
     address: '',
-    type: 'int16',
+    type: 'float',
     unit: '',
     description: '',
+    stationId: 1,
   })
   const [showAddForm, setShowAddForm] = useState(false)
   const { toast } = useToast()
@@ -197,9 +198,10 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       id: Date.now().toString(),
       name: newAddress.name.trim(),
       address: newAddress.address.trim(),
-      type: newAddress.type || 'int16',
+      type: newAddress.type || 'float',
       unit: newAddress.unit?.trim() === 'none' ? undefined : (newAddress.unit?.trim() || undefined),
       description: newAddress.description?.trim() || undefined,
+      stationId: newAddress.stationId || 1,
     }
 
     const newAddresses = [...addresses, address]
@@ -214,9 +216,10 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
     setNewAddress({
       name: '',
       address: '',
-      type: 'int16',
+      type: 'float',
       unit: '',
       description: '',
+      stationId: 1,
     })
     setShowAddForm(false)
 
@@ -477,10 +480,22 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                     className="font-mono"
                   />
                 </div>
+                {plcType === 'modbus_rtu_over_tcp' && (
+                  <div className="grid gap-2">
+                    <Label>站号</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="247"
+                      value={newAddress.stationId || 1}
+                      onChange={(e) => setNewAddress(prev => ({ ...prev, stationId: parseInt(e.target.value) || 1 }))}
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label>数据类型</Label>
                   <Select
-                    value={newAddress.type || 'int16'}
+                    value={newAddress.type || 'float'}
                     onValueChange={(value) => setNewAddress(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger>
@@ -532,9 +547,10 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                     setNewAddress({
                       name: '',
                       address: '',
-                      type: 'int16',
+                      type: 'float',
                       unit: '',
                       description: '',
+                      stationId: 1,
                     })
                   }}
                 >
@@ -568,6 +584,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
               <TableRow>
                 <TableHead>名称</TableHead>
                 <TableHead>地址</TableHead>
+                {plcType === 'modbus_rtu_over_tcp' && <TableHead>站号</TableHead>}
                 <TableHead>类型</TableHead>
                 <TableHead>单位</TableHead>
                 <TableHead>描述</TableHead>
@@ -586,6 +603,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                   onDelete={() => handleDelete(address.id)}
                   onCopy={() => handleCopy(address)}
                   disabled={disabled}
+                  plcType={plcType}
                 />
               ))}
             </TableBody>
@@ -615,6 +633,7 @@ interface AddressRowProps {
   onDelete: () => void
   onCopy: () => void
   disabled: boolean
+  plcType?: string
 }
 
 /**
@@ -629,6 +648,7 @@ function AddressRow({
   onDelete,
   onCopy,
   disabled,
+  plcType,
 }: AddressRowProps) {
   const [editData, setEditData] = useState<Partial<AddressConfig>>(address)
 
@@ -658,13 +678,25 @@ function AddressRow({
             className="h-8 font-mono"
           />
         </TableCell>
+        {plcType === 'modbus_rtu_over_tcp' && (
+          <TableCell>
+            <Input
+              type="number"
+              min="1"
+              max="247"
+              value={editData.stationId || 1}
+              onChange={(e) => setEditData(prev => ({ ...prev, stationId: parseInt(e.target.value) || 1 }))}
+              className="h-8"
+            />
+          </TableCell>
+        )}
         <TableCell>
           <Select
-            value={editData.type || 'int16'}
+            value={editData.type || 'float'}
             onValueChange={(value) => setEditData(prev => ({ ...prev, type: value }))}
           >
             <SelectTrigger className="h-8">
-              <SelectValue />
+              <SelectValue placeholder={DATA_TYPES.find(t => t.value === (editData.type || 'float'))?.label || '选择数据类型'} />
             </SelectTrigger>
             <SelectContent>
               {DATA_TYPES.map(type => (
@@ -681,7 +713,7 @@ function AddressRow({
             onValueChange={(value) => setEditData(prev => ({ ...prev, unit: value }))}
           >
             <SelectTrigger className="h-8">
-              <SelectValue placeholder="选择或输入单位" />
+              <SelectValue placeholder={editData.unit === 'none' ? '无单位' : (editData.unit || '选择单位')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">无单位</SelectItem>
@@ -731,6 +763,13 @@ function AddressRow({
     <TableRow>
       <TableCell className="font-medium">{address.name}</TableCell>
       <TableCell className="font-mono">{address.address}</TableCell>
+      {plcType === 'modbus_rtu_over_tcp' && (
+        <TableCell>
+          <Badge variant="outline">
+            站号{address.stationId || 1}
+          </Badge>
+        </TableCell>
+      )}
       <TableCell>
         <Badge variant="outline">
           {DATA_TYPES.find(t => t.value === address.type)?.label.split(' ')[0] || address.type}

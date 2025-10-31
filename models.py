@@ -104,6 +104,7 @@ class Device(Base):
     ip_address = Column(String(15), nullable=False, comment='IP地址')
     port = Column(Integer, nullable=False, comment='端口号')
     addresses = Column(Text, nullable=False, comment='采集地址列表(JSON格式)')
+    byte_order = Column(String(10), default='CDAB', comment='字节顺序配置(ABCD/BADC/CDAB/DCBA)')
     description = Column(Text, comment='设备描述')
     is_active = Column(Boolean, default=True, comment='是否启用')
     is_connected = Column(Boolean, default=False, comment='是否已连接')
@@ -258,6 +259,7 @@ class Device(Base):
             'ip_address': self.ip_address,
             'port': self.port,
             'addresses': addresses_data,  # 返回完整的地址配置对象数组
+            'byte_order': self.byte_order or 'CDAB',  # 字节顺序配置
             'description': self.description,
             'is_active': self.is_active,
             'is_connected': self.is_connected,

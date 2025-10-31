@@ -61,7 +61,6 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
   const handleProtocolChange = (protocolType: string) => {
     const protocolTypeToProtocol: Record<string, string> = {
       'modbus_tcp': 'tcp',
-      'modbus_rtu': 'rtu',
       'modbus_rtu_over_tcp': 'tcp',
       'omron_fins': 'tcp',
       'siemens_s7': 'tcp'
@@ -87,8 +86,7 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
       'modbus_tcp': 502,
       'modbus_rtu_over_tcp': 502,
       'omron_fins': 9600,
-      'siemens_s7': 102,
-      'modbus_rtu': 0 // 串口协议不需要端口
+      'siemens_s7': 102
     }
     return defaultPorts[protocolType] || 502
   }
@@ -125,7 +123,7 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
     }))
   }
 
-  const isRTUProtocol = formData.plc_type === 'modbus_rtu'
+  const isRTUProtocol = formData.plc_type === 'modbus_rtu_over_tcp'
   const isEditMode = !!device
 
   return (
