@@ -29,8 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { Device } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
@@ -408,36 +406,28 @@ export default function DeviceDetailPage() {
 
   if (deviceLoading) {
     return (
-      <AuthGuard>
-        <MainLayout>
-          <div className="container mx-auto p-6">
-            <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">加载设备信息中...</p>
-            </div>
-          </div>
-        </MainLayout>
-      </AuthGuard>
+      <div className="container mx-auto p-6">
+        <div className="text-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">加载设备信息中...</p>
+        </div>
+      </div>
     )
   }
 
   if (deviceError || !device) {
     return (
-      <AuthGuard>
-        <MainLayout>
-          <div className="container mx-auto p-6">
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <p className="text-red-600 mb-4">设备不存在或加载失败</p>
-                <Button variant="outline" onClick={handleBack}>
-                  返回
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </MainLayout>
-      </AuthGuard>
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 mb-4">设备不存在或加载失败</p>
+            <Button variant="outline" onClick={handleBack}>
+              返回
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -447,46 +437,36 @@ export default function DeviceDetailPage() {
   )
 
   return (
-    <AuthGuard>
-      <MainLayout>
-        <div className="w-full max-w-none p-6 space-y-8">
-          {/* 页面标题 - 扁平拟物风格 */}
-          <div className="neumorphic-card p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex items-center gap-6">
-                <Button variant="outline" size="lg" onClick={handleBack} className="shadow-neumorphic-sm hover:shadow-neumorphic">
-                  <ArrowLeft className="h-5 w-5 mr-2" />
-                  返回
-                </Button>
-                <div className="flex items-center gap-6">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic-lg">
-                    <Activity className="h-8 w-8 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h1 className="text-h1 gradient-text mb-2">{device.name}</h1>
-                    <p className="text-body text-muted-foreground">设备详情和实时数据监控</p>
-                  </div>
-                </div>
-              </div>
+    <div className="w-full max-w-none p-6 space-y-8">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={handleRefresh}
-                  disabled={dataLoading}
-                  className="shadow-neumorphic-sm hover:shadow-neumorphic"
+                  onClick={handleBack}
+                  className="bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-200"
                 >
-                  <RefreshCw className={`h-5 w-5 mr-2 ${dataLoading ? 'animate-spin' : ''}`} />
-                  刷新数据
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  返回
                 </Button>
+                <div>
+                  <h1 className="text-2xl md:text-3xl tracking-tight text-white">{device?.name || '设备详情'}</h1>
+                  <p className="text-sm md:text-base text-white/70 font-medium mt-1">实时监控设备运行状态和数据变化</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
                 <Button
-                  variant={autoRefresh ? 'default' : 'outline'}
+                  variant="outline"
                   size="lg"
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={autoRefresh ? 'shadow-neumorphic hover:shadow-neumorphic-lg' : 'shadow-neumorphic-sm hover:shadow-neumorphic'}
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                  className="bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-200"
                 >
-                  <Activity className="h-5 w-5 mr-2" />
-                  {autoRefresh ? '自动刷新中' : '手动模式'}
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">刷新数据</span>
+                  <span className="sm:hidden">刷新</span>
                 </Button>
               </div>
             </div>
@@ -1040,7 +1020,5 @@ export default function DeviceDetailPage() {
             </>
           )}
         </div>
-      </MainLayout>
-    </AuthGuard>
   )
 }

@@ -67,23 +67,23 @@ export function MainLayout({ children }: MainLayoutProps) {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      {/* 移动端遮罩层 */}
+    <div className="h-screen flex overflow-hidden bg-zinc-900">
+      {/* 移动端遮罩层 - Novara风格 */}
       {isMobile && mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-md transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity animate-[fadeIn_0.3s_ease-out]"
           onClick={closeMobileMenu}
         />
       )}
 
-      {/* 侧边栏 */}
+      {/* 侧边栏容器 - 应用玻璃效果 */}
       <div
         className={cn(
           'fixed inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out',
           'md:relative md:translate-x-0',
           isMobile
             ? mobileMenuOpen
-              ? 'translate-x-0'
+              ? 'translate-x-0 animate-[slideInLeft_0.4s_ease-out]'
               : '-translate-x-full'
             : 'translate-x-0'
         )}
@@ -95,13 +95,15 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       {/* 主内容区域 */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 顶部导航栏 */}
-        <Header onMenuClick={toggleSidebar} />
+      <div className="flex-1 flex flex-col overflow-hidden bg-zinc-900">
+        {/* 顶部导航栏 - 使用深色背景 */}
+        <div className="bg-zinc-900 border-b border-white/10 animate-[fadeInDown_0.6s_ease-out_0.3s_both]">
+          <Header onMenuClick={toggleSidebar} />
+        </div>
 
-        {/* 主内容 */}
+        {/* 主内容 - 深色背景，不使用玻璃拟态 */}
         <main className="flex-1 overflow-auto custom-scrollbar">
-          <div className="h-full bg-gradient-to-br from-background via-background to-muted/20">
+          <div className="px-4 md:px-6 lg:px-8 py-6 lg:py-8 min-h-full animate-[fadeInUp_0.6s_ease-out_0.2s_both]">
             {children}
           </div>
         </main>

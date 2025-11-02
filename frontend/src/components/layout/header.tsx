@@ -26,6 +26,7 @@ import {
   Bell,
   Menu,
   Activity,
+  Search,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -166,184 +167,177 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="neumorphic-header px-6 py-5">
-      <div className="flex items-center justify-between">
-        {/* 左侧：菜单按钮和标题 */}
-        <div className="flex items-center space-x-6">
-          <Button
-            variant="neumorphic"
-            size="icon"
+    <header className="px-4 md:px-6 lg:px-8 py-5 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
+      <div className="flex items-center justify-between gap-4">
+        {/* 左侧：菜单按钮和面包屑导航 */}
+        <div className="flex items-center gap-3 text-white/70">
+          <button
             onClick={onMenuClick}
-            className="md:hidden shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
+            className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10 lg:hidden"
           >
-            <Menu className="h-5 w-5" />
-          </Button>
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="hidden lg:flex items-center gap-3 text-white/70">
+            <span className="text-sm font-medium hover:text-white transition-colors text-white/70">
+              PLC平台
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-white/40">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+            <span className="text-sm font-medium text-white">
+              控制面板
+            </span>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-primary to-primary-dark rounded-2xl shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105 hover:rotate-3">
-              <Activity className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold gradient-text">
-                {systemName}
-              </h1>
-              <p className="text-sm text-muted-foreground font-medium">
-                {systemDescription}
-              </p>
-            </div>
+        {/* 中间：搜索框 */}
+        <div className="flex-1 max-w-xl">
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-card backdrop-blur ring-1 ring-white/10">
+            <Search className="w-4 h-4 text-white/50" />
+            <input
+              type="text"
+              placeholder="搜索设备、数据..."
+              className="w-full bg-transparent placeholder:text-white/50 text-sm outline-none text-white font-medium"
+            />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-white/10 text-white/60 font-medium">
+              ⌘K
+            </span>
           </div>
         </div>
 
         {/* 右侧：用户操作 */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-2">
           {/* 通知按钮 */}
-          <Button
-            variant="neumorphic"
-            size="icon"
-            className="relative h-11 w-11 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105 group"
-          >
-            <Bell className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-            {/* 通知红点 */}
-            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full border-2 border-background animate-pulse shadow-lg"></span>
-          </Button>
+          <button className="relative p-2 rounded-xl hover:bg-white/10 transition-colors hidden md:flex">
+            <Bell className="w-5 h-5 text-white/80" />
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-surface"></span>
+          </button>
 
-          {/* 用户菜单 */}
-          <div className="flex items-center space-x-4 neumorphic-card px-5 py-3">
-            {/* 用户信息 */}
-            <div className="hidden sm:block text-right">
-              <div className="text-sm font-bold text-foreground">
-                {user?.username}
+          {/* 快速操作按钮 */}
+          <button className="inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors">
+            <Activity className="w-4 h-4" />
+            <span className="text-sm hidden sm:inline">快速查看</span>
+          </button>
+
+          {/* 用户信息 */}
+          <div className="hidden md:flex items-center gap-3">
+            <div className="flex items-center gap-3 pl-2">
+              <div className="w-9 h-9 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 flex items-center justify-center">
+                <User className="w-5 h-5 text-accent" />
               </div>
-              <div className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-lg text-center mt-1">
-                {user?.role === 'super_admin'
-                  ? '超级管理员'
-                  : user?.role === 'admin'
-                  ? '管理员'
-                  : '普通用户'}
+              <div className="hidden sm:block">
+                <div className="text-sm font-semibold leading-5 text-white">
+                  {user?.username || '用户'}
+                </div>
+                <div className="text-xs text-white/60 font-medium">
+                  {user?.role === 'super_admin'
+                    ? '超级管理员'
+                    : user?.role === 'admin'
+                    ? '管理员'
+                    : '操作员'}
+                </div>
               </div>
+              <button className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+                <LogOut className="w-4 h-4 text-white/70" />
+              </button>
             </div>
+          </div>
 
-            {/* 用户头像 */}
-            <div className="w-11 h-11 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105 hover:rotate-3">
-              <User className="w-7 h-7 text-primary-foreground" />
-            </div>
+          {/* 移动端用户菜单 */}
+          <div className="md:hidden flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              title="登出"
+            >
+              <LogOut className="w-5 h-5 text-white/70" />
+            </button>
 
-            {/* 用户操作按钮 */}
-            <div className="flex items-center space-x-2">
-              {/* 修改密码 */}
-              <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="neumorphic"
-                    size="icon"
-                    title="修改密码"
-                    onClick={resetPasswordForm}
-                    className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
-                  >
-                    <Key className="h-5 w-5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] neumorphic-card">
-                  <DialogHeader>
-                    <DialogTitle className="text-xl font-bold gradient-text">修改密码</DialogTitle>
-                    <DialogDescription className="text-muted-foreground font-medium">
-                      请输入当前密码和新密码来修改您的登录密码
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-6 py-4">
-                    <div className="grid gap-3">
-                      <Label htmlFor="current-password" className="text-base font-semibold">当前密码</Label>
-                      <Input
-                        id="current-password"
-                        type="password"
-                        value={passwordForm.currentPassword}
-                        onChange={(e) =>
-                          setPasswordForm(prev => ({
-                            ...prev,
-                            currentPassword: e.target.value,
-                          }))
-                        }
-                        disabled={isChangingPassword}
-                        className="h-12 text-base"
-                      />
-                    </div>
-                    <div className="grid gap-3">
-                      <Label htmlFor="new-password" className="text-base font-semibold">新密码</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={passwordForm.newPassword}
-                        onChange={(e) =>
-                          setPasswordForm(prev => ({
-                            ...prev,
-                            newPassword: e.target.value,
-                          }))
-                        }
-                        disabled={isChangingPassword}
-                        className="h-12 text-base"
-                      />
-                    </div>
-                    <div className="grid gap-3">
-                      <Label htmlFor="confirm-password" className="text-base font-semibold">确认新密码</Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        value={passwordForm.confirmPassword}
-                        onChange={(e) =>
-                          setPasswordForm(prev => ({
-                            ...prev,
-                            confirmPassword: e.target.value,
-                          }))
-                        }
-                        disabled={isChangingPassword}
-                        className="h-12 text-base"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter className="gap-3">
-                    <Button
-                      variant="neumorphic"
-                      onClick={() => setShowPasswordDialog(false)}
-                      disabled={isChangingPassword}
-                      className="shadow-neumorphic-sm hover:shadow-neumorphic"
-                    >
-                      取消
-                    </Button>
-                    <Button
-                      onClick={handleChangePassword}
-                      disabled={isChangingPassword}
-                      className="shadow-neumorphic hover:shadow-neumorphic-lg"
-                    >
-                      {isChangingPassword ? '修改中...' : '确认修改'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              {/* 系统设置 */}
-              {user?.role === 'super_admin' && (
-                <Button
-                  variant="neumorphic"
-                  size="icon"
-                  title="系统设置"
-                  onClick={() => router.push('/settings')}
-                  className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
+            <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+              <DialogTrigger asChild>
+                <button
+                  onClick={resetPasswordForm}
+                  className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+                  title="修改密码"
                 >
-                  <Settings className="h-5 w-5" />
-                </Button>
-              )}
-
-              {/* 登出 */}
-              <Button
-                variant="neumorphic"
-                size="icon"
-                title="登出"
-                onClick={handleLogout}
-                className="h-9 w-9 shadow-neumorphic-sm hover:shadow-neumorphic hover:bg-destructive/10 transition-all duration-300 hover:scale-105 group"
-              >
-                <LogOut className="h-5 w-5 group-hover:text-destructive transition-colors duration-300" />
-              </Button>
-            </div>
+                  <Key className="w-5 h-5 text-white/70" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] glass-card">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold text-white">修改密码</DialogTitle>
+                  <DialogDescription className="text-white/60 font-medium">
+                    请输入当前密码和新密码来修改您的登录密码
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-6 py-4">
+                  <div className="grid gap-3">
+                    <Label htmlFor="current-password" className="text-base font-semibold text-white">当前密码</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          currentPassword: e.target.value,
+                        }))
+                      }
+                      disabled={isChangingPassword}
+                      className="h-12 text-base bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                  <div className="grid gap-3">
+                    <Label htmlFor="new-password" className="text-base font-semibold text-white">新密码</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          newPassword: e.target.value,
+                        }))
+                      }
+                      disabled={isChangingPassword}
+                      className="h-12 text-base bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                  <div className="grid gap-3">
+                    <Label htmlFor="confirm-password" className="text-base font-semibold text-white">确认新密码</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordForm(prev => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      disabled={isChangingPassword}
+                      className="h-12 text-base bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="gap-3">
+                  <button
+                    onClick={() => setShowPasswordDialog(false)}
+                    disabled={isChangingPassword}
+                    className="glass-btn-secondary"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword}
+                    className="glass-btn-primary"
+                  >
+                    {isChangingPassword ? '修改中...' : '确认修改'}
+                  </button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

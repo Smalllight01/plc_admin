@@ -27,8 +27,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { Device, Group, DataPoint } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
@@ -230,371 +228,349 @@ export default function DataPage() {
   const uncertainQualityPoints = dataPoints.filter((dp: DataPoint) => dp.quality === 'uncertain').length
 
   return (
-    <AuthGuard>
-      <MainLayout>
-        <div className="p-6 space-y-6">
-          {/* 页面标题 - 优化版本 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
+    <div className="p-4 lg:p-6 space-y-6">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">数据监控</h1>
-                    <p className="text-blue-600 mt-1 font-medium flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      实时监控 {totalPoints} 个数据点的值和状态
-                    </p>
-                  </div>
-                </div>
+                <h1 className="text-2xl md:text-3xl tracking-tight text-white">数据监控</h1>
+                <p className="text-sm md:text-base text-white/70 font-medium mt-1">
+                  实时监控 {totalPoints} 个数据点的值和状态
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                  autoRefresh 
-                    ? 'bg-emerald-50 border-emerald-200' 
-                    : 'bg-gray-50 border-gray-200'
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className={`glass-surface-light rounded-2xl px-4 py-3 flex items-center gap-3 ${
+                  autoRefresh ? 'ring-1 ring-emerald-500/30' : ''
                 }`}>
-                  <div className={`w-2 h-2 rounded-full ${
-                    autoRefresh ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
+                  <div className={`w-3 h-3 rounded-full ${
+                    autoRefresh ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-zinc-500'
                   }`}></div>
                   <span className={`text-sm font-medium ${
-                    autoRefresh ? 'text-emerald-700' : 'text-gray-600'
+                    autoRefresh ? 'text-emerald-400' : 'text-zinc-400'
                   }`}>
                     {autoRefresh ? '实时监控' : '手动模式'}
                   </span>
                   <Signal className={`h-4 w-4 ${
-                    autoRefresh ? 'text-emerald-600' : 'text-gray-500'
+                    autoRefresh ? 'text-emerald-500' : 'text-zinc-500'
                   }`} />
                 </div>
-                
+
                 <Button
-                  variant={autoRefresh ? 'default' : 'outline'}
-                  size="sm"
+                  variant={autoRefresh ? "glass-primary" : "glass"}
+                  size="default"
                   onClick={toggleAutoRefresh}
-                  className={autoRefresh 
-                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                    : 'bg-white hover:bg-gray-50 text-emerald-600 border-emerald-200'
-                  }
+                  className="flex items-center gap-2"
                 >
-                  <Activity className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-pulse' : ''}`} />
+                  <Activity className={`h-4 w-4 ${autoRefresh ? 'animate-pulse' : ''}`} />
                   {autoRefresh ? '停止自动刷新' : '启动自动刷新'}
                 </Button>
-                
+
                 <Button
+                  variant="glass"
                   onClick={() => refetch()}
                   disabled={isLoading}
-                  size="sm"
-                  className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-200 hover:border-blue-300"
+                  className="flex items-center gap-2"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   立即刷新
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* 统计卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:shadow-lg transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-900">总数据点</CardTitle>
-                <div className="p-2 bg-blue-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200">
-                  <Database className="h-4 w-4 text-white" />
+          {/* 统计卡片 - Novara风格 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 animate-[fadeInUp_0.6s_ease-out_0.4s_both]">
+            <div className="glass-card rounded-3xl p-6 group hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-white/60 mb-1">总数据点</h3>
+                  <div className="text-3xl font-bold text-white">{totalPoints}</div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-700">{totalPoints}</div>
-                <p className="text-xs text-blue-600 mt-1 flex items-center">
-                  <Target className="h-3 w-3 mr-1" />
-                  当前监控的数据点总数
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 border-green-200 hover:shadow-lg transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-green-900">良好质量</CardTitle>
-                <div className="p-2 bg-green-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200">
-                  <CheckCircle className="h-4 w-4 text-white" />
+                <div className="p-3 rounded-2xl bg-blue-500/20 backdrop-blur ring-1 ring-blue-500/30 group-hover:ring-blue-500/50 transition-all">
+                  <Database className="h-5 w-5 text-blue-400" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-700">{goodQualityPoints}</div>
-                <p className="text-xs text-green-600 mt-1 flex items-center">
-                  <Wifi className="h-3 w-3 mr-1" />
-                  质量状态良好的数据点
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-rose-100 border-red-200 hover:shadow-lg transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-red-900">错误质量</CardTitle>
-                <div className="p-2 bg-red-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200">
-                  <AlertTriangle className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/60">
+                <Target className="h-3 w-3" />
+                当前监控的数据点总数
+              </div>
+            </div>
+
+            <div className="glass-card rounded-3xl p-6 group hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-white/60 mb-1">良好质量</h3>
+                  <div className="text-3xl font-bold text-white">{goodQualityPoints}</div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-red-700">{badQualityPoints}</div>
-                <p className="text-xs text-red-600 mt-1 flex items-center">
-                  <WifiOff className="h-3 w-3 mr-1" />
-                  质量状态错误的数据点
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-amber-100 border-yellow-200 hover:shadow-lg transition-all duration-300 group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-yellow-900">不确定质量</CardTitle>
-                <div className="p-2 bg-yellow-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-200">
-                  <Clock className="h-4 w-4 text-white" />
+                <div className="p-3 rounded-2xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 group-hover:ring-emerald-500/50 transition-all">
+                  <CheckCircle className="h-5 w-5 text-emerald-400" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-700">{uncertainQualityPoints}</div>
-                <p className="text-xs text-yellow-600 mt-1 flex items-center">
-                  <Zap className="h-3 w-3 mr-1" />
-                  质量状态不确定的数据点
-                </p>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/60">
+                <Wifi className="h-3 w-3" />
+                质量状态良好的数据点
+              </div>
+            </div>
+
+            <div className="glass-card rounded-3xl p-6 group hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-white/60 mb-1">错误质量</h3>
+                  <div className="text-3xl font-bold text-white">{badQualityPoints}</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-red-500/20 backdrop-blur ring-1 ring-red-500/30 group-hover:ring-red-500/50 transition-all">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/60">
+                <WifiOff className="h-3 w-3" />
+                质量状态错误的数据点
+              </div>
+            </div>
+
+            <div className="glass-card rounded-3xl p-6 group hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-white/60 mb-1">不确定质量</h3>
+                  <div className="text-3xl font-bold text-white">{uncertainQualityPoints}</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-amber-500/20 backdrop-blur ring-1 ring-amber-500/30 group-hover:ring-amber-500/50 transition-all">
+                  <Clock className="h-5 w-5 text-amber-400" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/60">
+                <Zap className="h-3 w-3" />
+                质量状态不确定的数据点
+              </div>
+            </div>
           </div>
 
-          {/* 搜索和筛选 */}
-          <Card className="bg-gradient-to-r from-gray-50 to-blue-50 border-blue-200 shadow-lg">
-            <CardHeader className="pb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
-                  <Filter className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold text-gray-900">搜索和筛选</CardTitle>
-                  <CardDescription className="text-gray-600 flex items-center space-x-2 mt-1">
-                    <Search className="h-4 w-4 text-blue-500" />
-                    <span>根据数据点名称、设备或分组筛选数据</span>
-                  </CardDescription>
-                </div>
+          {/* 搜索和筛选 - Novara风格 */}
+          <div className="glass-card rounded-3xl p-6 lg:p-8 animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-2xl bg-indigo-500/20 backdrop-blur ring-1 ring-indigo-500/30">
+                <Filter className="h-5 w-5 text-indigo-400" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative group">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 group-focus-within:text-blue-500 transition-colors" />
-                    <Input
-                      placeholder="搜索数据点名称或地址..."
-                      value={searchTerm}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-white shadow-sm hover:shadow-md transition-all duration-200"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <Select value={groupFilter} onValueChange={handleGroupFilter}>
-                      <SelectTrigger className="w-[180px] border-gray-300 focus:border-blue-500 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-                        <div className="flex items-center space-x-2">
-                          <Target className="h-4 w-4 text-blue-500" />
-                          <SelectValue placeholder="选择分组" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">所有分组</SelectItem>
-                        <SelectItem value="0">未分组</SelectItem>
-                        {groups.map((group: Group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="relative">
-                    <Select value={deviceFilter} onValueChange={handleDeviceFilter}>
-                      <SelectTrigger className="w-[180px] border-gray-300 focus:border-blue-500 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-                        <div className="flex items-center space-x-2">
-                          <Database className="h-4 w-4 text-green-500" />
-                          <SelectValue placeholder="选择设备" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">所有设备</SelectItem>
-                        {devices.map((device: Device) => (
-                          <SelectItem key={device.id} value={device.id.toString()}>
-                            {device.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">搜索和筛选</h3>
+                <p className="text-white/60 text-sm mt-1 flex items-center gap-2">
+                  <Search className="h-4 w-4 text-indigo-400" />
+                  根据数据点名称、设备或分组筛选数据
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* 数据点列表 */}
-          <Card className="bg-white border-gray-200 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-md">
-                  <Database className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                    <span>数据点列表</span>
-                    <span className="text-sm font-normal text-gray-500">
-                      ({dataPoints.length} 个数据点)
-                    </span>
-                    {autoRefresh && (
-                      <Badge variant="outline" className="ml-auto">
-                        <Activity className="h-3 w-3 mr-1 animate-pulse" />
-                        每 {refreshInterval / 1000}s 刷新
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 flex items-center space-x-2 mt-1">
-                    <Activity className="h-4 w-4 text-green-500" />
-                    <span>实时监控设备数据点的当前值和质量状态</span>
-                  </CardDescription>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4 group-focus-within:text-indigo-400 transition-colors" />
+                  <Input
+                    placeholder="搜索数据点名称或地址..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-12 glass-surface-light border-0 focus:ring-1 focus:ring-indigo-500/50 text-white placeholder-white/60"
+                  />
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
+
+              <div className="flex gap-3">
+                <Select value={groupFilter} onValueChange={handleGroupFilter}>
+                  <SelectTrigger className="w-[180px] glass-surface-light border-0 focus:ring-1 focus:ring-indigo-500/50 text-white">
+                    <div className="flex items-center space-x-2">
+                      <Target className="h-4 w-4 text-indigo-400" />
+                      <SelectValue placeholder="选择分组" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0">
+                    <SelectItem value="all">所有分组</SelectItem>
+                    <SelectItem value="0">未分组</SelectItem>
+                    {groups.map((group: Group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={deviceFilter} onValueChange={handleDeviceFilter}>
+                  <SelectTrigger className="w-[180px] glass-surface-light border-0 focus:ring-1 focus:ring-emerald-500/50 text-white">
+                    <div className="flex items-center space-x-2">
+                      <Database className="h-4 w-4 text-emerald-400" />
+                      <SelectValue placeholder="选择设备" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0">
+                    <SelectItem value="all">所有设备</SelectItem>
+                    {devices.map((device: Device) => (
+                      <SelectItem key={device.id} value={device.id.toString()}>
+                        {device.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* 数据点列表 - Novara风格 */}
+          <div className="glass-card rounded-3xl p-6 lg:p-8 animate-[fadeInUp_0.6s_ease-out_0.6s_both]">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-2xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30">
+                <Database className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl lg:text-2xl font-bold text-white flex items-center gap-3">
+                  <span>数据点列表</span>
+                  <span className="text-sm font-normal text-white/60">
+                    ({dataPoints.length} 个数据点)
+                  </span>
+                  {autoRefresh && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-surface-light text-sm text-emerald-400">
+                      <Activity className="h-3 w-3 animate-pulse" />
+                      每 {refreshInterval / 1000}s 刷新
+                    </div>
+                  )}
+                </h3>
+                <p className="text-white/60 text-sm mt-1 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-emerald-400" />
+                  实时监控设备数据点的当前值和质量状态
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl overflow-hidden">
               {error ? (
-                <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-                    <AlertTriangle className="h-8 w-8 text-red-600" />
+                <div className="text-center py-16">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 backdrop-blur ring-1 ring-red-500/30 mb-6">
+                    <AlertTriangle className="h-10 w-10 text-red-400" />
                   </div>
-                  <p className="text-red-600 font-medium">加载数据点失败</p>
-                  <p className="text-sm text-gray-500 mt-1">请检查网络连接或稍后重试</p>
+                  <h3 className="text-xl font-bold text-white mb-3">加载数据点失败</h3>
+                  <p className="text-white/60 mb-6">请检查网络连接或稍后重试</p>
                   <Button
-                    variant="outline"
+                    variant="glass-primary"
                     onClick={() => refetch()}
-                    className="mt-4"
+                    className="flex items-center gap-2"
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4" />
                     重试
                   </Button>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 hover:bg-gray-50">
-                        <TableHead className="font-semibold text-gray-900">数据点名称</TableHead>
-                        <TableHead className="font-semibold text-gray-900">设备</TableHead>
-                        <TableHead className="font-semibold text-gray-900">分组</TableHead>
-                        <TableHead className="font-semibold text-gray-900">地址</TableHead>
-                        <TableHead className="font-semibold text-gray-900">数据类型</TableHead>
-                        <TableHead className="font-semibold text-gray-900">当前值</TableHead>
-                        <TableHead className="font-semibold text-gray-900">质量</TableHead>
-                        <TableHead className="font-semibold text-gray-900">趋势</TableHead>
-                        <TableHead className="font-semibold text-gray-900">更新时间</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">数据点名称</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">设备</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">分组</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">地址</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">数据类型</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">当前值</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">质量</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">趋势</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/80">更新时间</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {isLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-12">
-                            <div className="text-center">
-                              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                                <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                        <tr>
+                          <td colSpan={9} className="text-center py-16">
+                            <div className="flex flex-col items-center">
+                              <div className="w-16 h-16 rounded-full bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 flex items-center justify-center mb-4">
+                                <RefreshCw className="h-8 w-8 animate-spin text-emerald-400" />
                               </div>
-                              <p className="text-gray-600 font-medium">正在加载数据点...</p>
-                              <p className="text-sm text-gray-500 mt-1">请稍候</p>
+                              <p className="text-white font-medium">正在加载数据点...</p>
+                              <p className="text-sm text-white/60 mt-1">请稍候</p>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ) : dataPoints.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-12">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                              <Database className="h-8 w-8 text-gray-400" />
+                        <tr>
+                          <td colSpan={9} className="text-center py-16">
+                            <div className="flex flex-col items-center">
+                              <div className="w-16 h-16 rounded-full bg-zinc-500/20 backdrop-blur ring-1 ring-zinc-500/30 flex items-center justify-center mb-4">
+                                <Database className="h-8 w-8 text-zinc-400" />
+                              </div>
+                              <p className="text-white font-medium">暂无数据点</p>
+                              <p className="text-sm text-white/60 mt-2">
+                                {searchTerm || deviceFilter !== 'all' || groupFilter !== 'all'
+                                  ? '没有找到匹配的数据点，请检查筛选条件'
+                                  : '请添加数据点以开始监控'
+                                }
+                              </p>
                             </div>
-                            <p className="text-gray-600 font-medium">暂无数据点</p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {searchTerm || deviceFilter !== 'all' || groupFilter !== 'all' 
-                                ? '没有找到匹配的数据点，请检查筛选条件' 
-                                : '请添加数据点以开始监控'
-                              }
-                            </p>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ) : (
                         dataPoints.map((dataPoint: DataPoint, index: number) => {
                           const dataTypeInfo = getDataTypeInfo(dataPoint.data_type)
                           const qualityInfo = getQualityInfo(dataPoint.quality)
                           const TrendIcon = getTrendIcon(dataPoint.current_value, dataPoint.previous_value)
                           const device = devices.find((d: Device) => d.id === dataPoint.device_id)
-                          
+
                           return (
-                            <TableRow key={dataPoint.id} className={`hover:bg-blue-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                              <TableCell className="font-medium text-gray-900">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <tr key={dataPoint.id} className={`border-b border-white/5 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent'} hover:bg-white/[0.05]`}>
+                              <td className="px-6 py-4 font-medium text-white">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/30"></div>
                                   <span>{dataPoint.name}</span>
                                 </div>
-                              </TableCell>
-                              <TableCell className="text-gray-700">
+                              </td>
+                              <td className="px-6 py-4 text-white/80">
                                 <div className="flex items-center space-x-2">
-                                  <Database className="h-4 w-4 text-green-500" />
+                                  <Database className="h-4 w-4 text-emerald-400" />
                                   <span>{getDeviceName(dataPoint.device_id)}</span>
                                 </div>
-                              </TableCell>
-                              <TableCell className="text-gray-700">
+                              </td>
+                              <td className="px-6 py-4 text-white/80">
                                 <div className="flex items-center space-x-2">
-                                  <Target className="h-4 w-4 text-blue-500" />
+                                  <Target className="h-4 w-4 text-indigo-400" />
                                   <span>{getGroupName(device?.group_id || null)}</span>
                                 </div>
-                              </TableCell>
-                              <TableCell className="font-mono text-sm bg-gray-100 rounded px-2 py-1">
-                                {dataPoint.address}
-                              </TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${dataTypeInfo.color}`}>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="font-mono text-sm glass-surface-light px-3 py-1 rounded-xl text-white/80">
+                                  {dataPoint.address}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${dataTypeInfo.color.replace(/text-\w+-800/, 'text-white').replace(/bg-\w+-100/, 'bg-white/20 backdrop-blur ring-1 ring-white/30')}`}>
                                   {dataTypeInfo.label}
                                 </span>
-                              </TableCell>
-                              <TableCell className="font-mono font-semibold text-gray-900">
+                              </td>
+                              <td className="px-6 py-4 font-mono font-semibold text-white">
                                 {formatValue(dataPoint.current_value, dataPoint.data_type)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={qualityInfo.variant} className="flex items-center space-x-1 w-fit shadow-sm">
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium glass-surface-light ${
+                                  qualityInfo.variant === 'destructive' ? 'text-red-400 ring-1 ring-red-500/30' :
+                                  qualityInfo.variant === 'default' ? 'text-emerald-400 ring-1 ring-emerald-500/30' :
+                                  'text-amber-400 ring-1 ring-amber-500/30'
+                                }`}>
                                   <qualityInfo.icon className="h-3 w-3" />
                                   <span>{qualityInfo.label}</span>
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  <TrendIcon className="h-4 w-4 text-gray-500" />
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-1 text-sm text-gray-500">
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center">
+                                  <TrendIcon className="h-4 w-4 text-white/60" />
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center space-x-1 text-sm text-white/60">
                                   <Clock className="h-3 w-3" />
                                   <span>{dataPoint.updated_at ? formatDateTime(dataPoint.updated_at) : '-'}</span>
                                 </div>
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           )
                         })
                       )}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
-      </MainLayout>
-    </AuthGuard>
   )
 }

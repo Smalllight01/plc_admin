@@ -11,8 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, Download, RefreshCw, X, ChevronLeft, ChevronRight, Calendar, Filter, CheckSquare, Square, BarChart3, Monitor, MapPin, Clock, Sliders, TrendingUp } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { Device, Group, HistoryData } from '@/lib/api'
 
@@ -608,14 +606,14 @@ export default function HistoryPage() {
   const renderLegend = (props: any) => {
     const { payload } = props
     return (
-      <div className="flex flex-wrap gap-2 justify-center mt-4">
+      <div className="flex flex-wrap gap-3 justify-center mt-4">
         {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}-${entry.value}`} className="flex items-center gap-1 text-sm">
-            <div 
-              className="w-3 h-3 rounded-full" 
+          <div key={`legend-${index}-${entry.value}`} className="glass-surface-light px-3 py-1 rounded-lg flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-gray-700">
+            <span className="text-sm text-white">
               {addressMapping[entry.value] || entry.value}
             </span>
           </div>
@@ -651,117 +649,106 @@ export default function HistoryPage() {
   const filteredDevices = getFilteredDevices()
 
   return (
-    <AuthGuard>
-      <MainLayout>
-        <div className="w-full max-w-none p-6 space-y-8">
-          {/* 页面标题 - 扁平拟物风格 */}
-          <div className="neumorphic-card p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex items-center gap-6">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic-lg">
-                  <Calendar className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-h1 gradient-text mb-2">历史数据</h1>
-                  <p className="text-body text-muted-foreground">查看和分析设备历史数据</p>
-                </div>
+    <div className="w-full max-w-none p-4 sm:p-6 lg:p-8 space-y-6 animate-[fadeInUp_0.8s_ease-out_0.3s_both]">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl tracking-tight text-white">历史数据查询</h1>
+                <p className="text-sm md:text-base text-white/70 font-medium mt-1">查看和分析设备历史数据趋势</p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Button
-                  variant="default"
-                  size="lg"
                   onClick={handleQuery}
                   disabled={isLoading}
-                  className="shadow-neumorphic hover:shadow-neumorphic-lg"
+                  size="lg"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors"
                 >
                   {isLoading ? (
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 lg:h-5 lg:w-5 mr-2 animate-spin" />
                   ) : (
-                    <RefreshCw className="h-5 w-5 mr-2" />
+                    <RefreshCw className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
                   )}
-                  查询数据
+                  <span className="hidden sm:inline">查询数据</span>
+                  <span className="sm:hidden">查询</span>
                 </Button>
                 <Button
-                  variant="outline"
-                  size="lg"
                   onClick={handleExport}
                   disabled={historyData.length === 0}
-                  className="shadow-neumorphic-sm hover:shadow-neumorphic"
+                  size="lg"
+                  className="glass-btn font-semibold"
                 >
-                  <Download className="h-5 w-5 mr-2" />
-                  导出CSV
+                  <Download className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
+                  <span className="hidden sm:inline">导出CSV</span>
+                  <span className="sm:hidden">导出</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* 筛选条件 - 扁平拟物风格 */}
-          <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
-                  <Filter className="h-6 w-6 text-blue-600" />
-                </div>
-                <span className="text-h2 gradient-text">筛选条件</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 分组选择 */}
-            <div className="space-y-3">
-              <Label htmlFor="group-select" className="text-body font-semibold">分组</Label>
-              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                <SelectTrigger id="group-select" className="h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
-                  <SelectValue placeholder="选择分组" />
-                </SelectTrigger>
-                <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
-                  <SelectItem value="all">全部分组</SelectItem>
-                  {Array.isArray(groups) && groups.map(group => (
-                    <SelectItem key={group.id} value={group.id.toString()}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* 筛选条件 - 玻璃拟态风格 */}
+          <div className="glass-card p-6 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 animate-[fadeInDown_0.6s_ease-out_0.5s_both]">
+                <Filter className="h-6 w-6 text-accent" />
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white animate-[fadeInRight_0.6s_ease-out_0.6s_both]">筛选条件</h2>
             </div>
 
-            {/* 设备选择 */}
-            <div className="space-y-3">
-              <Label htmlFor="device-select" className="text-body font-semibold">选择设备</Label>
-              <Select value={selectedDevice?.id.toString() || ''} onValueChange={(value) => {
-                if (value) {
-                  const device = getFilteredDevices().find(d => d.id === parseInt(value))
-                  if (device) {
-                    setSelectedDevice(device)
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+              {/* 分组选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.7s_both]">
+                <Label htmlFor="group-select" className="text-sm font-medium text-white/80">分组</Label>
+                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                  <SelectTrigger className="glass-surface-light border-0 text-white">
+                    <SelectValue placeholder="选择分组" />
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0 text-white">
+                    <SelectItem value="all">全部分组</SelectItem>
+                    {Array.isArray(groups) && groups.map(group => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 设备选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.8s_both]">
+                <Label htmlFor="device-select" className="text-sm font-medium text-white/80">选择设备</Label>
+                <Select value={selectedDevice?.id.toString() || ''} onValueChange={(value) => {
+                  if (value) {
+                    const device = getFilteredDevices().find(d => d.id === parseInt(value))
+                    if (device) {
+                      setSelectedDevice(device)
+                      setSelectedAddresses([])
+                      fetchDeviceAddresses(device.id)
+                    }
+                  } else {
+                    setSelectedDevice(null)
                     setSelectedAddresses([])
-                    fetchDeviceAddresses(device.id)
+                    setDeviceAddresses([])
                   }
-                } else {
-                  setSelectedDevice(null)
-                  setSelectedAddresses([])
-                  setDeviceAddresses([])
-                }
-              }}>
-                <SelectTrigger className="h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
-                  <SelectValue placeholder="选择设备" />
-                </SelectTrigger>
-                <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
-                  {getFilteredDevices().map(device => (
-                    <SelectItem key={device.id} value={device.id.toString()}>
-                      {device.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                }}>
+                  <SelectTrigger className="glass-surface-light border-0 text-white">
+                    <SelectValue placeholder="选择设备" />
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0 text-white">
+                    {getFilteredDevices().map(device => (
+                      <SelectItem key={device.id} value={device.id.toString()}>
+                        {device.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* 地址选择 */}
-            <div className="space-y-3">
-              <Label htmlFor="address-select" className="text-body font-semibold">选择地址</Label>
+              {/* 地址选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.9s_both]">
+                <Label htmlFor="address-select" className="text-sm font-medium text-white/80">选择地址</Label>
 
-              {deviceAddresses.length > 0 ? (
-                <>
-                  {/* 地址选择下拉框 */}
+                {deviceAddresses.length > 0 ? (
                   <Select value="" onValueChange={(value) => {
                     if (value === 'select-all') {
                       setSelectedAddresses(deviceAddresses.map(addr => addr.address))
@@ -776,40 +763,34 @@ export default function HistoryPage() {
                       }
                     }
                   }}>
-                    <SelectTrigger className="h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
+                    <SelectTrigger className="glass-surface-light border-0 text-white">
                       <SelectValue placeholder={
                         selectedAddresses.length > 0
                           ? `已选择 ${selectedAddresses.length} 个地址`
                           : "选择地址"
                       } />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
-                      {/* 全选/清空选项 */}
-                      <SelectItem value="select-all" className="font-medium text-blue-600 hover:bg-blue-50">
-                        ✓ 全选所有地址
-                      </SelectItem>
-                      <SelectItem value="clear-all" className="font-medium text-red-600 hover:bg-red-50">
-                        ✗ 清空选择
-                      </SelectItem>
-                      <div className="border-t border-border/30 my-1"></div>
+                    <SelectContent className="max-h-60 glass-surface border-0 text-white">
+                      <SelectItem value="select-all">✓ 全选所有地址</SelectItem>
+                      <SelectItem value="clear-all">✗ 清空选择</SelectItem>
+                      <div className="border-t border-white/20 my-1"></div>
 
-                      {/* 地址列表 */}
                       {deviceAddresses.map(addr => {
                         const isSelected = selectedAddresses.includes(addr.address)
                         return (
                           <SelectItem
                             key={addr.address}
                             value={addr.address}
-                            className={`${isSelected ? 'bg-blue-50 text-blue-700' : ''} hover:bg-muted/50`}
+                            className={`${isSelected ? 'bg-accent/20' : ''} hover:bg-white/10`}
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center gap-3">
-                                <div className={`w-4 h-4 rounded-lg border-2 ${isSelected ? 'bg-blue-500 border-blue-500 shadow-neumorphic-sm' : 'border-border bg-muted/30'}`}>
+                                <div className={`w-4 h-4 rounded-lg border-2 ${isSelected ? 'bg-accent border-accent' : 'border-white/40'}`}>
                                   {isSelected && <span className="block w-full h-full text-white text-xs leading-3 text-center">✓</span>}
                                 </div>
                                 <div>
-                                  <div className="font-medium text-body">{addr.name || `地址 ${addr.originalAddress || addr.address}`}</div>
-                                  <div className="text-caption text-muted-foreground">
+                                  <div className="font-medium">{addr.name || `地址 ${addr.originalAddress || addr.address}`}</div>
+                                  <div className="text-xs text-white/60">
                                     {addr.originalAddress || addr.address}
                                     {addr.unit && ` • ${addr.unit}`}
                                     {addr.stationId && addr.stationId > 1 && ` • 站号${addr.stationId}`}
@@ -822,193 +803,189 @@ export default function HistoryPage() {
                       })}
                     </SelectContent>
                   </Select>
-                </>
-              ) : (
-                <div className="bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 rounded-2xl p-4 text-center shadow-neumorphic-sm">
-                  <div className="text-body-sm text-muted-foreground">
-                    {selectedDevice ? '该设备暂无可用地址' : '请先选择设备'}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 开始时间 */}
-            <div className="space-y-3">
-              <Label htmlFor="start-time" className="text-body font-semibold">开始时间</Label>
-              <Input
-                id="start-time"
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
-              />
-            </div>
-
-            {/* 结束时间 */}
-            <div className="space-y-3">
-              <Label htmlFor="end-time" className="text-body font-semibold">结束时间</Label>
-              <Input
-                id="end-time"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
-              />
-            </div>
-
-            {/* 重置按钮 */}
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                className="w-full h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
-              >
-                重置条件
-              </Button>
-            </div>
-          </div>
-          
-          {/* 已选设备和地址 */}
-          {selectedDevice && (
-            <div className="mt-6 space-y-4">
-              <div>
-                <Label className="text-body font-semibold">已选设备</Label>
-                <div className="flex flex-wrap gap-3 mt-3">
-                  <Badge variant="secondary" className="flex items-center gap-2 px-4 py-2 shadow-neumorphic-sm">
-                    <div className="p-1.5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
-                      <Monitor className="h-3.5 w-3.5 text-blue-600" />
+                ) : (
+                  <div className="glass-surface-light rounded-xl p-4 text-center">
+                    <div className="text-sm text-white/60">
+                      {selectedDevice ? '该设备暂无可用地址' : '请先选择设备'}
                     </div>
-                    <span className="font-medium">{selectedDevice.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all duration-300"
-                      onClick={() => handleRemoveDevice(selectedDevice.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                </div>
+                  </div>
+                )}
               </div>
-              {selectedAddresses.length > 0 && (
+
+              {/* 开始时间 */}
+              <div className="space-y-3 animate-[fadeInRight_0.6s_ease-out_1s_both]">
+                <Label htmlFor="start-time" className="text-sm font-medium text-white/80">开始时间</Label>
+                <Input
+                  id="start-time"
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="glass-surface-light border-0 text-white"
+                />
+              </div>
+
+              {/* 结束时间 */}
+              <div className="space-y-3 animate-[fadeInRight_0.6s_ease-out_1.1s_both]">
+                <Label htmlFor="end-time" className="text-sm font-medium text-white/80">结束时间</Label>
+                <Input
+                  id="end-time"
+                  type="datetime-local"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="glass-surface-light border-0 text-white"
+                />
+              </div>
+
+              {/* 重置按钮 */}
+              <div className="flex items-end animate-[fadeInRight_0.6s_ease-out_1.2s_both]">
+                <Button
+                  onClick={handleReset}
+                  className="w-full glass-btn font-semibold"
+                >
+                  重置条件
+                </Button>
+              </div>
+            </div>
+
+            {/* 已选设备和地址 */}
+            {selectedDevice && (
+              <div className="mt-6 space-y-4 animate-[fadeInUp_0.6s_ease-out_1.3s_both]">
                 <div>
-                  <Label className="text-body font-semibold">已选地址 ({selectedAddresses.length})</Label>
+                  <Label className="text-sm font-medium text-white/80">已选设备</Label>
                   <div className="flex flex-wrap gap-3 mt-3">
-                    {selectedAddresses.map(address => {
-                      const addr = deviceAddresses.find(a => a.address === address)
-                      return (
-                        <Badge key={address} variant="outline" className="text-body-sm px-3 py-2 shadow-neumorphic-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50">
-                              <MapPin className="h-3 w-3 text-green-600" />
-                            </div>
-                            <span>{addr?.name || address}</span>
-                          </div>
-                        </Badge>
-                      )
-                    })}
+                    <div className="glass-card-light px-4 py-2 flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-accent" />
+                      <span className="font-medium text-white">{selectedDevice.name}</span>
+                      <Button
+                        size="sm"
+                        className="h-6 w-6 p-0 rounded-lg hover:bg-red-500/20 hover:text-red-400 text-white/60"
+                        onClick={() => handleRemoveDevice(selectedDevice.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {selectedAddresses.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-white/80">已选地址 ({selectedAddresses.length})</Label>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {selectedAddresses.map(address => {
+                        const addr = deviceAddresses.find(a => a.address === address)
+                        return (
+                          <div key={address} className="glass-surface-light px-3 py-1 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3 text-accent" />
+                              <span className="text-sm text-white">{addr?.name || address}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-          {/* 数据统计 - 扁平拟物风格 */}
+          {/* 数据统计 - 玻璃拟态风格 */}
           {historyData.length > 0 && (
-            <div className="dashboard-grid">
-              <div className="stat-card group">
-                <div className="flex items-start justify-between mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {/* 当前数据统计 */}
+              <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.4s_both]">
+                <div className="flex items-start justify-between mb-4">
                   <div className="space-y-2">
-                    <h3 className="text-h4 text-foreground">当前数据</h3>
+                    <h3 className="text-lg font-semibold text-white">当前数据</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-caption font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 shadow-neumorphic-sm">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-accent/20 text-accent ring-1 ring-accent/30">
                         窗口数据
                       </span>
                     </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
-                    <BarChart3 className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="p-2 rounded-lg bg-accent/20 backdrop-blur ring-1 ring-accent/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <BarChart3 className="h-5 w-5 text-accent" />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="stat-card-number group-hover:scale-105 transition-transform duration-300">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-white group-hover:scale-105 transition-transform">
                     {historyData.length}
                   </div>
-                  <p className="stat-card-label">
+                  <p className="text-sm text-white/70">
                     当前显示 / 总计: {allHistoryData.length}
                   </p>
                 </div>
               </div>
 
-              <div className="stat-card group">
-                <div className="flex items-start justify-between mb-6">
+              {/* 选中设备统计 */}
+              <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.5s_both]">
+                <div className="flex items-start justify-between mb-4">
                   <div className="space-y-2">
-                    <h3 className="text-h4 text-foreground">选中设备</h3>
+                    <h3 className="text-lg font-semibold text-white">选中设备</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-caption font-medium bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200 shadow-neumorphic-sm">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30">
                         设备数量
                       </span>
                     </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
-                    <Monitor className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="p-2 rounded-lg bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <Monitor className="h-5 w-5 text-emerald-400" />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="stat-card-number text-emerald-600 group-hover:scale-105 transition-transform duration-300">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-emerald-400 group-hover:scale-105 transition-transform">
                     {selectedDevice ? 1 : 0}
                   </div>
-                  <p className="stat-card-label">
+                  <p className="text-sm text-white/70">
                     {selectedDevice ? selectedDevice.name : '未选择设备'}
                   </p>
                 </div>
               </div>
 
-              <div className="stat-card group">
-                <div className="flex items-start justify-between mb-6">
+              {/* 涉及地址统计 */}
+              <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.6s_both]">
+                <div className="flex items-start justify-between mb-4">
                   <div className="space-y-2">
-                    <h3 className="text-h4 text-foreground">涉及地址</h3>
+                    <h3 className="text-lg font-semibold text-white">涉及地址</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-caption font-medium bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-200 shadow-neumorphic-sm">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">
                         地址数量
                       </span>
                     </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
-                    <MapPin className="h-6 w-6 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="p-2 rounded-lg bg-purple-500/20 backdrop-blur ring-1 ring-purple-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <MapPin className="h-5 w-5 text-purple-400" />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="stat-card-number text-purple-600 group-hover:scale-105 transition-transform duration-300">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-purple-400 group-hover:scale-105 transition-transform">
                     {new Set(historyData.map(item => item.address)).size}
                   </div>
-                  <p className="stat-card-label">
+                  <p className="text-sm text-white/70">
                     当前窗口内唯一地址数量
                   </p>
                 </div>
               </div>
 
-              <div className="stat-card group">
-                <div className="flex items-start justify-between mb-6">
+              {/* 最新数据时间 */}
+              <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.7s_both]">
+                <div className="flex items-start justify-between mb-4">
                   <div className="space-y-2">
-                    <h3 className="text-h4 text-foreground">最新数据</h3>
+                    <h3 className="text-lg font-semibold text-white">最新数据</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-caption font-medium bg-orange-50 text-orange-700 px-3 py-1 rounded-full border border-orange-200 shadow-neumorphic-sm">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/30">
                         时间戳
                       </span>
                     </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
-                    <Clock className="h-6 w-6 text-orange-600 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="p-2 rounded-lg bg-orange-500/20 backdrop-blur ring-1 ring-orange-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <Clock className="h-5 w-5 text-orange-400" />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="stat-card-number text-orange-600 group-hover:scale-105 transition-transform duration-300">
+                <div className="space-y-2">
+                  <div className="text-lg font-bold text-orange-400 group-hover:scale-105 transition-transform">
                     {historyData.length > 0 ? new Date(Math.max(...historyData.map(item => new Date(item.time).getTime()))).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                   </div>
-                  <p className="stat-card-label">
+                  <p className="text-sm text-white/70">
                     当前窗口最新数据时间
                   </p>
                 </div>
@@ -1016,204 +993,192 @@ export default function HistoryPage() {
             </div>
           )}
 
-          {/* 滑动窗口控制 - 扁平拟物风格 */}
+          {/* 滑动窗口控制 - 玻璃拟态风格 */}
           {allHistoryData.length > 0 && (
-            <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
-                    <Sliders className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <span className="text-h2 gradient-text">数据窗口控制</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-            <div className="space-y-6">
-              {/* 窗口大小选择 */}
-              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                <div className="flex items-center gap-4">
-                  <span className="text-body font-semibold">显示数据点:</span>
-                  <Select value={windowSize.toString()} onValueChange={handleWindowSizeChange}>
-                    <SelectTrigger className="w-28 h-10 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
-                      <SelectItem value="500">500</SelectItem>
-                      <SelectItem value="1000">1000</SelectItem>
-                      <SelectItem value="2000">2000</SelectItem>
-                      <SelectItem value="5000">5000</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <div className="glass-card p-6 animate-[fadeInUp_0.6s_ease-out_1.8s_both]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 animate-[fadeInDown_0.6s_ease-out_1.9s_both]">
+                  <Sliders className="h-6 w-6 text-accent" />
                 </div>
-                <div className="text-body text-muted-foreground">
-                  总数据: {allHistoryData.length} 条 | 当前显示: {windowStart + 1} - {Math.min(windowStart + windowSize, allHistoryData.length)} 条
-                </div>
+                <h2 className="text-xl lg:text-2xl font-bold text-white animate-[fadeInRight_0.6s_ease-out_2s_both]">数据窗口控制</h2>
               </div>
 
-              {/* 滑动控制 */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={moveWindowBackward}
-                    disabled={windowStart === 0}
-                    className="h-12 px-6 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                    向前
-                  </Button>
-                  <div className="flex-1 px-4">
-                    <Slider
-                      value={[windowStart]}
-                      onValueChange={handleSliderChange}
-                      max={Math.max(0, allHistoryData.length - windowSize)}
-                      step={Math.floor(windowSize / 10)}
-                      className="w-full"
-                    />
+              <div className="space-y-6">
+                {/* 窗口大小选择 */}
+                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-white/80">显示数据点:</span>
+                    <Select value={windowSize.toString()} onValueChange={handleWindowSizeChange}>
+                      <SelectTrigger className="w-24 h-10 glass-surface-light border-0 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="glass-surface border-0 text-white">
+                        <SelectItem value="500">500</SelectItem>
+                        <SelectItem value="1000">1000</SelectItem>
+                        <SelectItem value="2000">2000</SelectItem>
+                        <SelectItem value="5000">5000</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={moveWindowForward}
-                    disabled={windowStart >= allHistoryData.length - windowSize}
-                    className="h-12 px-6 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
-                  >
-                    向后
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
+                  <div className="text-sm text-white/60">
+                    总数据: {allHistoryData.length} 条 | 当前显示: {windowStart + 1} - {Math.min(windowStart + windowSize, allHistoryData.length)} 条
+                  </div>
                 </div>
-                <div className="text-body-sm text-muted-foreground text-center">
-                  拖动滑块或使用按钮来浏览数据
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-          {/* 图表展示 - 扁平拟物风格 */}
-          <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
-            <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
-                    <TrendingUp className="h-6 w-6 text-blue-600" />
+                {/* 滑动控制 */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={moveWindowBackward}
+                      disabled={windowStart === 0}
+                      className="h-12 px-6 glass-btn font-semibold"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                      向前
+                    </Button>
+                    <div className="flex-1 px-4">
+                      <Slider
+                        value={[windowStart]}
+                        onValueChange={handleSliderChange}
+                        max={Math.max(0, allHistoryData.length - windowSize)}
+                        step={Math.floor(windowSize / 10)}
+                        className="w-full"
+                      />
+                    </div>
+                    <Button
+                      onClick={moveWindowForward}
+                      disabled={windowStart >= allHistoryData.length - windowSize}
+                      className="h-12 px-6 glass-btn font-semibold"
+                    >
+                      向后
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
                   </div>
-                  <div>
-                    <span className="text-h2 gradient-text">数据趋势图</span>
-                    {dataKeys.length > 0 && (
-                      <span className="text-body text-muted-foreground ml-3">
-                        ({dataKeys.length} 条数据线)
-                      </span>
-                    )}
+                  <div className="text-sm text-white/60 text-center">
+                    拖动滑块或使用按钮来浏览数据
                   </div>
-                </CardTitle>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-80">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm mb-4">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-              <span className="text-body text-muted-foreground">加载图表数据中...</span>
-            </div>
-          ) : chartData.length > 0 ? (
-            <div className="h-[400px] sm:h-[500px] lg:h-[700px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{
-                    top: 20,
-                    right: window.innerWidth < 768 ? 10 : 30,
-                    left: window.innerWidth < 768 ? 10 : 20,
-                    bottom: window.innerWidth < 768 ? 80 : 120
-                  }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#f0f0f0"
-                    opacity={0.7}
-                  />
-                  <XAxis
-                    dataKey="time"
-                    tick={{
-                      fontSize: window.innerWidth < 768 ? 8 : 10,
-                      fill: '#666'
-                    }}
-                    angle={window.innerWidth < 768 ? -90 : -45}
-                    textAnchor="end"
-                    height={window.innerWidth < 768 ? 60 : 100}
-                    interval={Math.max(0, Math.floor(chartData.length / (window.innerWidth < 768 ? 5 : 10)))}
-                  />
-                  <YAxis
-                    tick={{
-                      fontSize: window.innerWidth < 768 ? 9 : 11,
-                      fill: '#666'
-                    }}
-                    axisLine={{ stroke: '#e0e0e0' }}
-                    tickLine={{ stroke: '#e0e0e0' }}
-                  />
-                  <Tooltip
-                    labelStyle={{
-                      color: '#333',
-                      fontWeight: 'bold',
-                      fontSize: window.innerWidth < 768 ? '12px' : '14px'
-                    }}
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      padding: window.innerWidth < 768 ? '8px' : '12px'
-                    }}
-                    formatter={(value: any, name: string) => [
-                      value,
-                      name
-                    ]}
-                  />
-                  <Legend content={renderLegend} />
-                  {dataKeys.map((key, index) => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={getLineColor(index)}
-                      strokeWidth={window.innerWidth < 768 ? 1.5 : 2}
-                      dot={false}
-                      activeDot={{
-                        r: window.innerWidth < 768 ? 3 : 4,
-                        stroke: getLineColor(index),
-                        strokeWidth: 2
-                      }}
-                      connectNulls={false}
-                      name={addressMapping[key] || key}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-80">
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm mb-6">
-                <TrendingUp className="h-16 w-16 text-muted-foreground" />
-              </div>
-              <h3 className="text-h3 text-foreground mb-3">暂无数据</h3>
-              <p className="text-body text-muted-foreground text-center">
-                {!selectedDevice
-                  ? '请先选择要查看的设备'
-                  : selectedAddresses.length === 0
-                  ? '请选择要查看的地址'
-                  : '请设置筛选条件并点击"查询数据"按钮'
-                }
-              </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          {/* 图表展示 - 玻璃拟态风格 */}
+          <div className="glass-card p-6 animate-[fadeInUp_0.6s_ease-out_2.1s_both]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 animate-[fadeInDown_0.6s_ease-out_2.2s_both]">
+                  <TrendingUp className="h-6 w-6 text-accent" />
+                </div>
+                <div className="animate-[fadeInRight_0.6s_ease-out_2.3s_both]">
+                  <h2 className="text-xl lg:text-2xl font-bold text-white">数据趋势图</h2>
+                  {dataKeys.length > 0 && (
+                    <span className="text-sm text-white/70 ml-3">
+                      ({dataKeys.length} 条数据线)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-80">
+                <div className="p-4 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 mb-4 animate-[spin_3s_linear_infinite]">
+                  <Loader2 className="h-8 w-8 text-accent" />
+                </div>
+                <span className="text-sm text-white/70">加载图表数据中...</span>
+              </div>
+            ) : chartData.length > 0 ? (
+              <div className="h-[400px] sm:h-[500px] lg:h-[700px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{
+                      top: 20,
+                      right: window.innerWidth < 768 ? 10 : 30,
+                      left: window.innerWidth < 768 ? 10 : 20,
+                      bottom: window.innerWidth < 768 ? 80 : 120
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="rgba(255, 255, 255, 0.1)"
+                      opacity={0.5}
+                    />
+                    <XAxis
+                      dataKey="time"
+                      tick={{
+                        fontSize: window.innerWidth < 768 ? 8 : 10,
+                        fill: 'rgba(255, 255, 255, 0.6)'
+                      }}
+                      angle={window.innerWidth < 768 ? -90 : -45}
+                      textAnchor="end"
+                      height={window.innerWidth < 768 ? 60 : 100}
+                      interval={Math.max(0, Math.floor(chartData.length / (window.innerWidth < 768 ? 5 : 10)))}
+                    />
+                    <YAxis
+                      tick={{
+                        fontSize: window.innerWidth < 768 ? 9 : 11,
+                        fill: 'rgba(255, 255, 255, 0.6)'
+                      }}
+                      axisLine={{ stroke: 'rgba(255, 255, 255, 0.2)' }}
+                      tickLine={{ stroke: 'rgba(255, 255, 255, 0.2)' }}
+                    />
+                    <Tooltip
+                      labelStyle={{
+                        color: '#333',
+                        fontWeight: 'bold',
+                        fontSize: window.innerWidth < 768 ? '12px' : '14px'
+                      }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        padding: window.innerWidth < 768 ? '8px' : '12px',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      formatter={(value: any, name: string) => [
+                        <span style={{ color: '#fff' }}>{value}</span>,
+                        <span style={{ color: '#fff' }}>{name}</span>
+                      ]}
+                    />
+                    <Legend content={renderLegend} />
+                    {dataKeys.map((key, index) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        stroke={getLineColor(index)}
+                        strokeWidth={window.innerWidth < 768 ? 1.5 : 2}
+                        dot={false}
+                        activeDot={{
+                          r: window.innerWidth < 768 ? 3 : 4,
+                          stroke: getLineColor(index),
+                          strokeWidth: 2
+                        }}
+                        connectNulls={false}
+                        name={addressMapping[key] || key}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-80">
+                <div className="p-6 rounded-xl bg-white/10 backdrop-blur-sm mb-6">
+                  <TrendingUp className="h-16 w-16 text-white/40" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">暂无数据</h3>
+                <p className="text-sm text-white/60 text-center">
+                  {!selectedDevice
+                    ? '请先选择要查看的设备'
+                    : selectedAddresses.length === 0
+                    ? '请选择要查看的地址'
+                    : '请设置筛选条件并点击"查询数据"按钮'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </MainLayout>
-    </AuthGuard>
   )
 }

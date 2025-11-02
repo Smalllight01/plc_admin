@@ -10,8 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import {
   BarChart,
   Bar,
@@ -550,310 +548,362 @@ export default function StatisticsPage() {
   const pieData = preparePieData()
 
   return (
-    <AuthGuard>
-      <MainLayout>
-        <div className="w-full max-w-none p-6 space-y-6">
-          {/* 页面标题 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
+    <div className="w-full max-w-none p-4 sm:p-6 lg:p-8 space-y-6 animate-[fadeInUp_0.8s_ease-out_0.3s_both]">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">数据统计</h1>
-                    <p className="text-blue-600 mt-1 font-medium">
-                      查看和分析设备数据采集统计信息
-                    </p>
-                  </div>
-                </div>
+                <h1 className="text-2xl md:text-3xl tracking-tight text-white">数据统计分析</h1>
+                <p className="text-sm md:text-base text-white/70 font-medium mt-1">查看和分析设备数据采集统计信息</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => {
                     fetchStatistics()
                     fetchAnomalies()
                   }}
                   disabled={loading || anomalyLoading}
-                  className="bg-white hover:bg-gray-50"
+                  //size="lg"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${(loading || anomalyLoading) ? 'animate-spin' : ''}`} />
-                  刷新数据
+                  <RefreshCw className={`h-4 w-4 lg:h-5 lg:w-5 mr-2 ${(loading || anomalyLoading) ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">刷新数据</span>
+                  <span className="sm:hidden">刷新</span>
                 </Button>
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={exportStatistics}
                   disabled={loading || statistics.length === 0}
-                  className="bg-white hover:bg-gray-50"
+                  //size="lg"
+                  className="glass-btn font-semibold"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  导出数据
+                  <Download className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
+                  <span className="hidden sm:inline">导出数据</span>
+                  <span className="sm:hidden">导出</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* 筛选条件 */}
-          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <Filter className="h-5 w-5 mr-2" />
-                筛选条件
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* 时间范围选择 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">时间范围</label>
-                  <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10m">最近10分钟</SelectItem>
-                      <SelectItem value="30m">最近30分钟</SelectItem>
-                      <SelectItem value="1h">最近1小时</SelectItem>
-                      <SelectItem value="24h">最近24小时</SelectItem>
-                      <SelectItem value="7d">最近7天</SelectItem>
-                      <SelectItem value="30d">最近30天</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 分组选择 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">分组</label>
-                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部分组</SelectItem>
-                      {groups.map(group => (
-                        <SelectItem key={group.id} value={group.id.toString()}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 设备选择 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">设备</label>
-                  <Select value={selectedDevice} onValueChange={setSelectedDevice}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部设备</SelectItem>
-                      {devices.map(device => (
-                        <SelectItem key={device.id} value={device.id.toString()}>
-                          {device.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* 筛选条件 - 玻璃拟态风格 */}
+          <div className="glass-card p-6 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 animate-[fadeInDown_0.6s_ease-out_0.5s_both]">
+                <Filter className="h-6 w-6 text-accent" />
               </div>
-            </CardContent>
-          </Card>
+              <h2 className="text-xl lg:text-2xl font-bold text-white animate-[fadeInRight_0.6s_ease-out_0.6s_both]">筛选条件</h2>
+            </div>
 
-          {/* 错误提示 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+              {/* 时间范围选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.7s_both]">
+                <label className="text-sm font-medium text-white/80">时间范围</label>
+                <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+                  <SelectTrigger className="glass-surface-light border-0 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0 text-white">
+                    <SelectItem value="10m">最近10分钟</SelectItem>
+                    <SelectItem value="30m">最近30分钟</SelectItem>
+                    <SelectItem value="1h">最近1小时</SelectItem>
+                    <SelectItem value="24h">最近24小时</SelectItem>
+                    <SelectItem value="7d">最近7天</SelectItem>
+                    <SelectItem value="30d">最近30天</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 分组选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.8s_both]">
+                <label className="text-sm font-medium text-white/80">分组</label>
+                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                  <SelectTrigger className="glass-surface-light border-0 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0 text-white">
+                    <SelectItem value="all">全部分组</SelectItem>
+                    {groups.map(group => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 设备选择 */}
+              <div className="space-y-3 animate-[fadeInLeft_0.6s_ease-out_0.9s_both]">
+                <label className="text-sm font-medium text-white/80">设备</label>
+                <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+                  <SelectTrigger className="glass-surface-light border-0 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="glass-surface border-0 text-white">
+                    <SelectItem value="all">全部设备</SelectItem>
+                    {devices.map(device => (
+                      <SelectItem key={device.id} value={device.id.toString()}>
+                        {device.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* 错误提示 - 玻璃拟态风格 */}
           {error && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{error}</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+            <div className="glass-card-light p-4 border-l-4 border-red-500 animate-[fadeInDown_0.6s_ease-out_1s_both]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                  <span className="text-red-400 font-medium">{error}</span>
+                </div>
+                <Button
                   onClick={() => {
                     setError(null)
                     fetchStatistics()
                   }}
-                  className="ml-4"
+                  className="glass-btn text-red-400 hover:text-red-300"
+                  size="sm"
                 >
                   重试
                 </Button>
-              </AlertDescription>
-            </Alert>
+              </div>
+            </div>
           )}
 
-          {/* 总体统计卡片 */}
+          {/* 总体统计卡片 - 玻璃拟态风格 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">总数据点</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BarChart3 className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold text-gray-900">{overallStats.totalPoints.toLocaleString()}</div>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              {getTimeRangeText(timeRange)}采集的数据点总数
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">平均成功率</CardTitle>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold text-gray-900">
-                {(overallStats.avgSuccessRate * 100).toFixed(1)}%
+            <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.1s_both]">
+              <div className="flex items-start justify-between mb-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">总数据点</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-accent/20 text-accent ring-1 ring-accent/30">
+                      数据统计
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-lg bg-accent/20 backdrop-blur ring-1 ring-accent/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                </div>
               </div>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              数据采集平均成功率
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">活跃设备</CardTitle>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Activity className="h-4 w-4 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold text-gray-900">
-                {overallStats.activeDevices}/{overallStats.totalDevices}
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-white group-hover:scale-105 transition-transform">
+                  {loading ? (
+                    <div className="h-8 w-20 bg-white/10 rounded animate-pulse"></div>
+                  ) : (
+                    overallStats.totalPoints.toLocaleString()
+                  )}
+                </div>
+                <p className="text-sm text-white/70">
+                  {getTimeRangeText(timeRange)}采集的数据点总数
+                </p>
               </div>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              有数据采集的设备数量
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">时间范围</CardTitle>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Clock className="h-4 w-4 text-orange-600" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{getTimeRangeText(timeRange)}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              当前统计时间范围
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* 图表和详细数据 */}
-      <Tabs defaultValue="charts" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="charts">图表分析</TabsTrigger>
-          <TabsTrigger value="details">详细数据</TabsTrigger>
-          <TabsTrigger value="data">表格数据</TabsTrigger>
-          <TabsTrigger value="anomalies">异常分析</TabsTrigger>
-          <TabsTrigger value="performance">性能分析</TabsTrigger>
+            <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.2s_both]">
+              <div className="flex items-start justify-between mb-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">平均成功率</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30">
+                      采集成功率
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-lg bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <TrendingUp className="h-5 w-5 text-emerald-400" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-emerald-400 group-hover:scale-105 transition-transform">
+                  {loading ? (
+                    <div className="h-8 w-20 bg-white/10 rounded animate-pulse"></div>
+                  ) : (
+                    `${(overallStats.avgSuccessRate * 100).toFixed(1)}%`
+                  )}
+                </div>
+                <p className="text-sm text-white/70">
+                  数据采集平均成功率
+                </p>
+              </div>
+            </div>
+
+            <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.3s_both]">
+              <div className="flex items-start justify-between mb-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">活跃设备</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">
+                      设备状态
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-lg bg-purple-500/20 backdrop-blur ring-1 ring-purple-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <Activity className="h-5 w-5 text-purple-400" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-purple-400 group-hover:scale-105 transition-transform">
+                  {loading ? (
+                    <div className="h-8 w-20 bg-white/10 rounded animate-pulse"></div>
+                  ) : (
+                    `${overallStats.activeDevices}/${overallStats.totalDevices}`
+                  )}
+                </div>
+                <p className="text-sm text-white/70">
+                  有数据采集的设备数量
+                </p>
+              </div>
+            </div>
+
+            <div className="glass-card p-6 hover:scale-105 transition-all duration-300 group animate-[fadeInUp_0.6s_ease-out_1.4s_both]">
+              <div className="flex items-start justify-between mb-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">时间范围</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/30">
+                      统计周期
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-lg bg-orange-500/20 backdrop-blur ring-1 ring-orange-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <Clock className="h-5 w-5 text-orange-400" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-lg font-bold text-orange-400 group-hover:scale-105 transition-transform">
+                  {getTimeRangeText(timeRange)}
+                </div>
+                <p className="text-sm text-white/70">
+                  当前统计时间范围
+                </p>
+              </div>
+            </div>
+          </div>
+
+      {/* 图表和详细数据 - 玻璃拟态风格 */}
+      <Tabs defaultValue="charts" className="space-y-4 animate-[fadeInUp_0.6s_ease-out_1.5s_both]">
+        <TabsList className="glass-surface border-0 p-1 w-full flex flex-wrap gap-2">
+          <TabsTrigger value="charts" className="glass-btn px-4 py-2 text-white data-[state=active]:glass-btn-primary">
+            图表分析
+          </TabsTrigger>
+          <TabsTrigger value="details" className="glass-btn px-4 py-2 text-white data-[state=active]:glass-btn-primary">
+            详细数据
+          </TabsTrigger>
+          <TabsTrigger value="data" className="glass-btn px-4 py-2 text-white data-[state=active]:glass-btn-primary">
+            表格数据
+          </TabsTrigger>
+          <TabsTrigger value="anomalies" className="glass-btn px-4 py-2 text-white data-[state=active]:glass-btn-primary">
+            异常分析
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="glass-btn px-4 py-2 text-white data-[state=active]:glass-btn-primary">
+            性能分析
+          </TabsTrigger>
         </TabsList>
 
-        {/* 图表分析 */}
+        {/* 图表分析 - 玻璃拟态风格 */}
         <TabsContent value="charts" className="space-y-4 lg:space-y-6">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
             {/* 数据点统计柱状图 */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <BarChart3 className="h-5 w-5 mr-2" />
-                  设备数据点统计
-                </CardTitle>
-                <CardDescription>
-                  各设备在{getTimeRangeText(timeRange)}内的数据点采集情况
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="glass-card p-6 animate-[fadeInUp_0.6s_ease-out_1.6s_both]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-accent/20 backdrop-blur ring-1 ring-accent/30">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">设备数据点统计</h3>
+                  <p className="text-sm text-white/70">
+                    各设备在{getTimeRangeText(timeRange)}内的数据点采集情况
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4">
                 {loading ? (
                   <div className="h-[250px] sm:h-[300px] flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
                   </div>
                 ) : chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                     <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                      <XAxis
+                        dataKey="name"
                         angle={-45}
                         textAnchor="end"
                         height={80}
                         fontSize={12}
+                        tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
                       />
-                      <YAxis yAxisId="left" fontSize={12} />
-                      <YAxis yAxisId="right" orientation="right" fontSize={12} />
-                      <Tooltip />
+                      <YAxis yAxisId="left" fontSize={12} tick={{ fill: 'rgba(255, 255, 255, 0.6)' }} />
+                      <YAxis yAxisId="right" orientation="right" fontSize={12} tick={{ fill: 'rgba(255, 255, 255, 0.6)' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="total_points" fill="#3b82f6" name="数据点数" yAxisId="left" />
+                      <Bar dataKey="total_points" fill="#10b981" name="数据点数" yAxisId="left" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-white/40">
                     暂无数据
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* 地址数量统计折线图 */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  设备地址数量统计
-                </CardTitle>
-                <CardDescription>
-                  各设备配置的地址数量趋势
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="glass-card p-6 animate-[fadeInUp_0.6s_ease-out_1.7s_both]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-accent/20 backdrop-blur ring-1 ring-accent/30">
+                  <TrendingUp className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">设备地址数量统计</h3>
+                  <p className="text-sm text-white/70">
+                    各设备配置的地址数量趋势
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4">
                 {loading ? (
                   <div className="h-[250px] sm:h-[300px] flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
                   </div>
                 ) : chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                      <XAxis
+                        dataKey="name"
                         angle={-45}
                         textAnchor="end"
                         height={80}
                         fontSize={12}
+                        tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
                       />
-                      <YAxis yAxisId="left" fontSize={12} />
-                      <YAxis yAxisId="right" orientation="right" fontSize={12} />
-                      <Tooltip formatter={(value) => [value, '地址数量']} />
+                      <YAxis yAxisId="left" fontSize={12} tick={{ fill: 'rgba(255, 255, 255, 0.6)' }} />
+                      <YAxis yAxisId="right" orientation="right" fontSize={12} tick={{ fill: 'rgba(255, 255, 255, 0.6)' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          backdropFilter: 'blur(10px)'
+                        }}
+                        formatter={(value) => [value, '地址数量']}
+                      />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="address_count" 
-                        stroke="#10b981" 
+                      <Line
+                        type="monotone"
+                        dataKey="address_count"
+                        stroke="#10b981"
                         strokeWidth={2}
                         name="地址数量"
                         yAxisId="left"
@@ -861,12 +911,12 @@ export default function StatisticsPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-white/40">
                     暂无数据
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* 设备活跃状态饼图 */}
             <Card className="border-0 shadow-sm">
@@ -1800,8 +1850,5 @@ export default function StatisticsPage() {
 
           </Tabs>
         </div>
-        
-      </MainLayout>
-    </AuthGuard>
   )
 }

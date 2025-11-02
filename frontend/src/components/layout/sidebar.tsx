@@ -56,13 +56,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       requireAdmin: true,
     },
     {
-      title: '设备状态',
-      href: '/devices/status',
-      icon: Activity,
-      description: '监控设备连接状态',
-      requireAdmin: true,
-    },
-    {
       title: '实时数据',
       href: '/realtime',
       icon: Activity,
@@ -79,12 +72,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       href: '/statistics',
       icon: BarChart3,
       description: '数据分析和统计',
-    },
-    {
-      title: '性能分析',
-      href: '/performance',
-      icon: TrendingUp,
-      description: '设备性能监控和分析',
     },
     {
       title: '用户管理',
@@ -130,123 +117,208 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <div
       className={cn(
-        'neumorphic-sidebar flex flex-col h-full transition-all duration-300 ease-in-out',
-        collapsed ? 'w-14' : 'w-64'
+        'glass-surface h-full transition-all duration-300 ease-in-out animate-[slideInLeft_0.8s_ease-out_0.4s_both]',
+        collapsed ? 'w-20' : 'w-72'
       )}
     >
       {/* 头部 */}
       <div className={cn(
-        'flex items-center border-b border-border/50 bg-gradient-to-r from-primary/10 to-accent/5 transition-all duration-300',
-        collapsed ? 'justify-center p-3' : 'justify-between p-4'
+        'border-b border-white/10 transition-all duration-300',
+        collapsed ? 'p-5' : 'p-6 pb-5'
       )}>
-        {!collapsed && (
-          <div className="flex items-center space-x-3 animate-slide-in">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105">
-              <Database className="w-5 h-5 text-primary-foreground" />
+        {!collapsed ? (
+          <div className="flex items-center gap-3 animate-[fadeIn_0.6s_ease-out_0.2s_both]">
+            <div className="h-10 w-10 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 flex items-center justify-center">
+              <Database className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <span className="font-bold text-lg gradient-text">
+              <div className="text-base font-semibold tracking-tight text-white">
                 PLC平台
-              </span>
-              <div className="text-xs text-muted-foreground font-medium">
+              </div>
+              <div className="text-xs text-white/60">
                 数据采集系统
               </div>
             </div>
           </div>
+        ) : (
+          <div className="flex justify-center animate-[fadeIn_0.6s_ease-out_0.2s_both]">
+            <div className="h-10 w-10 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 flex items-center justify-center">
+              <Database className="w-5 h-5 text-accent" />
+            </div>
+          </div>
         )}
-
-        <Button
-          variant="neumorphic"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8 shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300 hover:scale-105"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4 text-foreground" />
-          ) : (
-            <ChevronLeft className="h-4 w-4 text-foreground" />
-          )}
-        </Button>
       </div>
 
       {/* 导航菜单 */}
       <nav className={cn(
         'flex-1 custom-scrollbar overflow-y-auto',
-        collapsed ? 'px-2 py-4' : 'px-4 py-5'
+        collapsed ? 'pt-5 pr-5 pb-5 pl-5' : 'pt-5 pr-5 pb-5 pl-5'
       )}>
-        {navigationItems
-          .filter(hasPermission)
-          .map((item, index) => {
-            const Icon = item.icon
-            const active = isActive(item.href)
+        {/* 概览部分 */}
+        <div className="animate-[fadeIn_0.6s_ease-out_0.6s_both]">
+          <div className="text-xs uppercase tracking-wide text-white/50 mb-3 font-medium">
+            概览
+          </div>
+          <ul className="space-y-2 mb-6">
+            {navigationItems
+              .filter(item =>
+                hasPermission(item) &&
+                ['仪表板', '分组管理', '设备管理', '实时数据'].includes(item.title)
+              )
+              .map((item, index) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
 
-            return (
-              <div key={item.href} className={collapsed ? 'mb-3' : 'mb-4'}>
-                <Link href={item.href}>
-                <div
-                  className={cn(
-                    'group flex items-center transition-all duration-300 ease-out border-2',
-                    'hover:shadow-neumorphic hover:-translate-y-0.5',
-                    collapsed
-                      ? 'justify-center px-1.5 py-2 rounded-lg w-10 h-10'
-                      : 'justify-start space-x-3 px-3 py-2.5 rounded-xl min-h-[44px]',
-                    active
-                      ? 'bg-gradient-to-r from-primary to-primary-dark text-primary-foreground border-primary shadow-neumorphic-lg scale-105'
-                      : 'bg-card text-foreground border-border/50 hover:border-primary/50 hover:bg-muted/30'
-                  )}
-                  title={collapsed ? item.title : undefined}
-                  style={{
-                    animationDelay: `${index * 50}ms`
-                  }}
-                >
-                  <div className={cn(
-                    'transition-all duration-300 flex items-center justify-center',
-                    active
-                      ? 'bg-primary-foreground/20 shadow-inner'
-                      : 'bg-gradient-to-br from-muted to-accent/20 group-hover:from-primary/10 group-hover:to-accent/30',
-                    collapsed ? 'p-1.5 rounded-lg w-6 h-6' : 'p-2 rounded-lg'
-                  )}>
-                    <Icon className={cn(
-                      'transition-all duration-300',
-                      collapsed ? 'h-4 w-4' : 'h-5 w-5',
-                      active ? 'text-primary-foreground' : 'text-foreground group-hover:text-primary group-hover:scale-110'
-                    )} />
-                  </div>
-                  {!collapsed && (
-                    <div className="flex-1 min-w-0 animate-fade-in ml-2">
-                      <div className={cn(
-                        'font-bold text-sm transition-colors duration-300 leading-tight',
-                        active ? 'text-primary-foreground' : 'text-foreground group-hover:text-primary'
-                      )}>
-                        {item.title}
-                      </div>
-                      {!active && (
-                        <div className="text-xs text-muted-foreground truncate mt-0.5 group-hover:text-primary/70 transition-colors leading-tight">
-                          {item.description}
+                return (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        className={cn(
+                          'group flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200',
+                          active
+                            ? 'bg-card/80 backdrop-blur ring-1 ring-white/10 text-white'
+                            : 'text-white/70 hover:text-white hover:bg-white/5'
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          {!collapsed && active && (
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-accent/20 ring-1 ring-accent/30">
+                              <Icon className="w-4 h-4 text-accent" />
+                            </span>
+                          )}
+                          {!collapsed && !active && (
+                            <Icon className="w-5 h-5" />
+                          )}
+                          {collapsed && (
+                            <span className={cn(
+                              'inline-flex h-6 w-6 items-center justify-center rounded-lg',
+                              active
+                                ? 'bg-accent/20 ring-1 ring-accent/30'
+                                : 'bg-white/10'
+                            )}>
+                              <Icon className={cn(
+                                'w-4 h-4',
+                                active ? 'text-accent' : 'text-white/70'
+                              )} />
+                            </span>
+                          )}
+                          {!collapsed && (
+                            <span className="text-sm font-medium">
+                              {item.title}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Link>
-              </div>
-            )
-          })}
+                        {!collapsed && active && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-medium">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+          </ul>
+        </div>
+
+        {/* 数据分析部分 */}
+        <div className="animate-[fadeIn_0.6s_ease-out_0.7s_both]">
+          <div className="text-xs uppercase tracking-wide text-white/50 mb-3 font-medium">
+            数据分析
+          </div>
+          <ul className="space-y-2 mb-6">
+            {navigationItems
+              .filter(item =>
+                hasPermission(item) &&
+                ['历史数据', '数据统计'].includes(item.title)
+              )
+              .map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+
+                return (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200',
+                          active && 'bg-card/80 backdrop-blur ring-1 ring-white/10 text-white'
+                        )}
+                      >
+                        {collapsed ? (
+                          <Icon className="w-5 h-5" />
+                        ) : (
+                          <>
+                            <Icon className="w-5 h-5" />
+                            <span className="text-sm font-medium text-white/70">
+                              {item.title}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+          </ul>
+        </div>
+
+        {/* 管理部分 */}
+        <div className="animate-[fadeIn_0.6s_ease-out_0.8s_both]">
+          <div className="text-xs uppercase tracking-wide text-white/50 mb-3 font-medium">
+            管理
+          </div>
+          <ul className="space-y-2">
+            {navigationItems
+              .filter(item =>
+                hasPermission(item) &&
+                ['用户管理', '系统设置'].includes(item.title)
+              )
+              .map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+
+                return (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200',
+                          active && 'bg-card/80 backdrop-blur ring-1 ring-white/10 text-white'
+                        )}
+                      >
+                        {collapsed ? (
+                          <Icon className="w-5 h-5" />
+                        ) : (
+                          <>
+                            <Icon className="w-5 h-5" />
+                            <span className="text-sm font-medium text-white/70">
+                              {item.title}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+          </ul>
+        </div>
       </nav>
 
       {/* 用户信息 */}
       {!collapsed && user && (
-        <div className="p-3 border-t border-border/50 bg-gradient-to-r from-muted/30 to-accent/10 animate-slide-up">
-          <div className="neumorphic-card p-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300 hover:scale-105">
-                <Users className="w-5 h-5 text-primary-foreground" />
+        <div className="p-4 border-t border-white/10 animate-[fadeInUp_0.6s_ease-out_0.9s_both]">
+          <div className="rounded-2xl p-4 glass-card">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 flex items-center justify-center">
+                <Users className="w-5 h-5 text-accent" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-foreground truncate">
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-white">
                   {user.username}
                 </div>
-                <div className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded text-center mt-1">
+                <div className="text-xs text-white/60 font-medium">
                   {user.role === 'super_admin'
                     ? '超级管理员'
                     : user.role === 'admin'
@@ -254,6 +326,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     : '普通用户'}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 收起状态下用户图标 */}
+      {collapsed && user && (
+        <div className="p-4 border-t border-white/10 animate-[fadeIn_0.6s_ease-out_1s_both]">
+          <div className="flex justify-center">
+            <div className="h-10 w-10 rounded-xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 flex items-center justify-center">
+              <Users className="w-5 h-5 text-accent" />
             </div>
           </div>
         </div>

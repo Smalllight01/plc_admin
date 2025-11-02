@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { authService } from '@/services/api'
 import { useToast } from '@/components/ui/use-toast'
+import { MainLayout } from '@/components/layout/main-layout'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -16,18 +17,22 @@ interface AuthGuardProps {
  * 认证守卫组件
  * 用于保护需要登录或特定权限的页面
  */
-export function AuthGuard({ 
-  children, 
-  requireAdmin = false, 
-  requireSuperAdmin = false 
+export function AuthGuard({
+  children,
+  requireAdmin = false,
+  requireSuperAdmin = false
 }: AuthGuardProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [hasHydrated, setHasHydrated] = useState(false)
-  
+
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const { user, token, isAuthenticated, login, logout } = useAuthStore()
+
+  // 判断是否是登录页面
+  const isLoginPage = pathname === '/login'
 
   // 等待zustand persist状态恢复
   useEffect(() => {
@@ -164,5 +169,13 @@ export function AuthGuard({
   }
 
   // 渲染受保护的内容
-  return <>{children}</>
+  if (isLoginPage) {
+    return <>{children}</>
+  }
+
+  return (
+    <MainLayout>
+      {children}
+    </MainLayout>
+  )
 }

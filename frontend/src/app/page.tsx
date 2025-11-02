@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import { useToast } from '@/components/ui/use-toast'
 import { apiService } from '@/services/api'
 import { DashboardStats } from '@/lib/api'
@@ -147,257 +145,257 @@ export default function DashboardPage() {
   ]
 
   return (
-    <AuthGuard>
-      <MainLayout>
-        <div className="p-6 space-y-8">
-          {/* 页面标题 - 增强扁平拟物风格 */}
-          <div className="neumorphic-card p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex items-center gap-6">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-neumorphic-lg">
-                  <BarChart3 className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-h1 gradient-text mb-2">系统仪表板</h1>
-                  <p className="text-body text-muted-foreground flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-primary" />
-                    实时监控系统状态和关键指标
-                  </p>
+    <div className="space-y-6">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <h1 className="text-2xl md:text-3xl tracking-tight text-white">
+              PLC管理概览
+            </h1>
+          </div>
+
+          {/* 顶部统计卡片 - Novara风格 */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 用户总数 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_0.6s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">用户总数</div>
+                <div className="p-2 rounded-xl bg-blue-500/20 backdrop-blur ring-1 ring-blue-500/30">
+                  <Users className="w-4 h-4 text-blue-400" />
                 </div>
               </div>
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg"></div>
-                  <span className="text-body-sm font-medium text-emerald-700">实时更新</span>
-                  <Clock className="h-5 w-5 text-emerald-600" />
+              <div className="mt-3 flex items-end justify-between">
+                <div className="text-2xl md:text-3xl tracking-tight text-white">
+                  {isLoading ? (
+                    <div className="loading-shimmer h-8 w-16 rounded-lg"></div>
+                  ) : (
+                    stats.total_users
+                  )}
                 </div>
-                <Button
-                  onClick={loadDashboardData}
-                  disabled={isLoading}
-                  variant="default"
-                  size="lg"
-                  className="shadow-neumorphic hover:shadow-neumorphic-lg"
-                >
-                  <RefreshCw className={`h-5 w-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                  刷新数据
-                </Button>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-semibold">+2.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 分组数量 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_0.7s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">分组数量</div>
+                <div className="p-2 rounded-xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30">
+                  <Layers className="w-4 h-4 text-emerald-400" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-end justify-between">
+                <div className="text-2xl md:text-3xl tracking-tight text-white">
+                  {isLoading ? (
+                    <div className="loading-shimmer h-8 w-16 rounded-lg"></div>
+                  ) : (
+                    stats.total_groups
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-semibold">+1.2%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 设备总数 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_0.8s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">设备总数</div>
+                <div className="p-2 rounded-xl bg-purple-500/20 backdrop-blur ring-1 ring-purple-500/30">
+                  <HardDrive className="w-4 h-4 text-purple-400" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-end justify-between">
+                <div className="text-2xl md:text-3xl tracking-tight text-white">
+                  {isLoading ? (
+                    <div className="loading-shimmer h-8 w-16 rounded-lg"></div>
+                  ) : (
+                    stats.total_devices
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-semibold">+5.8%</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 统计卡片网格 - 增强扁平拟物风格 */}
-          <div className="dashboard-grid">
-            {statCards.map((card, index) => {
-              const Icon = card.icon
-
-              return (
-                <div key={index} className="stat-card group">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="space-y-2">
-                      <h3 className="text-h4 text-foreground group-hover:text-primary transition-colors duration-300">
-                        {card.title}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-caption font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-neumorphic-sm">
-                          {card.trend}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={`p-3 rounded-2xl ${card.bgColor} shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out`}>
-                      <Icon className={`h-6 w-6 ${card.color} group-hover:scale-110 transition-transform duration-300`} />
-                    </div>
+          {/* 中间：设备状态和数据统计 */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            {/* 月度数据采集 */}
+            <div className="lg:col-span-2 rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInLeft_0.8s_ease-out_0.9s_both]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-indigo-500/20 backdrop-blur ring-1 ring-indigo-500/30">
+                    <Database className="w-6 h-6 text-indigo-400" />
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="stat-card-number group-hover:scale-105 transition-transform duration-300">
+                  <div>
+                    <div className="text-sm text-white/70 font-medium">月度数据采集</div>
+                    <div className="mt-1 text-xl font-semibold tracking-tight text-white">
                       {isLoading ? (
-                        <div className="loading-shimmer h-10 w-24 rounded-xl"></div>
+                        <div className="loading-shimmer h-8 w-32 rounded-lg"></div>
                       ) : (
-                        <span className="text-mono">{card.value}</span>
+                        `${stats.total_data_points.toLocaleString()} 条`
                       )}
                     </div>
-                    <p className="stat-card-label">
-                      {card.description}
-                    </p>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-
-          {/* 系统状态和快速操作 */}
-          <div className="responsive-grid-2">
-            {/* 系统状态 */}
-            <div className="neumorphic-card p-6 lg:p-8">
-              <div className="flex items-center gap-4 mb-6 lg:mb-8">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-neumorphic-lg">
-                  <Activity className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-h3 lg:text-h2 gradient-text">系统状态</h2>
-                  <p className="text-body-sm lg:text-body text-muted-foreground">当前系统运行状态概览</p>
+                <div className="flex items-center gap-1 text-emerald-400 text-sm font-semibold">
+                  <TrendingUp className="w-4 h-4" />
+                  +12.4%
                 </div>
               </div>
-
-              <div className="space-y-4 lg:space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 lg:p-5 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
-                  <div className="flex items-center gap-3 lg:gap-4 mb-3 sm:mb-0">
-                    <div className="p-2 lg:p-2.5 bg-emerald-500 rounded-xl shadow-neumorphic-sm">
-                      <Shield className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                    </div>
-                    <span className="text-body-sm lg:text-body font-semibold text-foreground">系统运行状态</span>
-                  </div>
-                  <div className="flex items-center gap-2 lg:gap-3">
-                    <div className="w-2 h-2 lg:w-3 lg:h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg"></div>
-                    <span className="status-indicator status-online text-body-sm lg:text-body">正常运行</span>
+              <div className="mt-4 relative h-40">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <Database className="w-12 h-12 mx-auto mb-2 text-white/20" />
+                    <p className="text-xs text-white/40">数据趋势图</p>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 lg:p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
-                  <div className="flex items-center gap-3 lg:gap-4 mb-3 sm:mb-0">
-                    <div className="p-2 lg:p-2.5 bg-blue-500 rounded-xl shadow-neumorphic-sm">
-                      <Database className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                    </div>
-                    <span className="text-body-sm lg:text-body font-semibold text-foreground">数据采集状态</span>
-                  </div>
-                  <div className="flex items-center gap-2 lg:gap-3">
-                    <div className="w-2 h-2 lg:w-3 lg:h-3 bg-blue-500 rounded-full animate-pulse shadow-lg"></div>
-                    <span className="status-indicator status-online text-body-sm lg:text-body">采集中</span>
-                  </div>
+            {/* 设备状态 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInRight_0.8s_ease-out_0.9s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">设备连接状态</div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 text-xs text-emerald-400 font-medium">
+                  <Activity className="w-3.5 h-3.5" />
+                  实时监控
                 </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 lg:p-5 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
-                  <div className="flex items-center gap-3 lg:gap-4 mb-3 sm:mb-0">
-                    <div className="p-2 lg:p-2.5 bg-purple-500 rounded-xl shadow-neumorphic-sm">
-                      <Wifi className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
+              </div>
+              <ul className="mt-4 space-y-3">
+                <li className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 flex items-center justify-center">
+                      <Wifi className="w-5 h-5 text-emerald-400" />
                     </div>
-                    <span className="text-body-sm lg:text-body font-semibold text-foreground">设备连接率</span>
-                  </div>
-                  <div className="flex items-center gap-3 lg:gap-4">
-                    <div className="text-h4 lg:text-h3 text-mono">
-                      {stats.total_devices > 0
-                        ? `${Math.round((stats.online_devices / stats.total_devices) * 100)}%`
-                        : '0%'
-                      }
-                    </div>
-                    <div className="w-16 lg:w-24 h-2 lg:h-3 rounded-full bg-muted overflow-hidden shadow-inner">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-700 ease-out shadow-neumorphic-sm"
-                        style={{ width: stats.total_devices > 0 ? `${(stats.online_devices / stats.total_devices) * 100}%` : '0%' }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                {stats.recent_alerts > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 lg:p-5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl shadow-neumorphic-sm hover:shadow-neumorphic transition-all duration-300">
-                    <div className="flex items-center gap-3 lg:gap-4 mb-3 sm:mb-0">
-                      <div className="p-2 lg:p-2.5 bg-orange-500 rounded-xl shadow-neumorphic-sm">
-                        <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
+                    <div>
+                      <div className="text-sm font-semibold text-white">在线设备</div>
+                      <div className="text-xs text-emerald-400/60 font-medium">
+                        {isLoading ? (
+                          <div className="loading-shimmer h-4 w-16 rounded"></div>
+                        ) : (
+                          `正常运行中`
+                        )}
                       </div>
-                      <span className="text-body-sm lg:text-body font-semibold text-foreground">近期告警</span>
-                    </div>
-                    <div className="flex items-center gap-2 lg:gap-3">
-                      <span className="status-indicator bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 shadow-neumorphic-sm text-body-sm lg:text-body">
-                        {stats.recent_alerts} 条
-                      </span>
                     </div>
                   </div>
+                  <div className="text-sm font-semibold text-emerald-400">
+                    {isLoading ? (
+                      <div className="loading-shimmer h-6 w-8 rounded"></div>
+                    ) : (
+                      stats.online_devices
+                    )}
+                  </div>
+                </li>
+                <li className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-red-500/20 backdrop-blur ring-1 ring-red-500/30 flex items-center justify-center">
+                      <WifiOff className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">离线设备</div>
+                      <div className="text-xs text-red-400/60 font-medium">
+                        {isLoading ? (
+                          <div className="loading-shimmer h-4 w-16 rounded"></div>
+                        ) : (
+                          `需要检查连接`
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold text-red-400">
+                    {isLoading ? (
+                      <div className="loading-shimmer h-6 w-8 rounded"></div>
+                    ) : (
+                      stats.offline_devices
+                    )}
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 底部：系统状态和快速操作 */}
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* 系统状态 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_1s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">系统运行状态</div>
+                <div className="p-2 rounded-xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-end justify-between">
+                <div className="text-2xl tracking-tight text-white">正常运行</div>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-sm font-semibold">99.9%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 设备连接率 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_1.1s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">设备连接率</div>
+                <div className="p-2 rounded-xl bg-amber-500/20 backdrop-blur ring-1 ring-amber-500/30">
+                  <Wifi className="w-4 h-4 text-amber-400" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-end justify-between">
+                <div className="text-2xl tracking-tight text-white">
+                  {stats.total_devices > 0
+                    ? `${Math.round((stats.online_devices / stats.total_devices) * 100)}%`
+                    : '0%'
+                  }
+                </div>
+                <div className="flex items-center gap-1 text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-semibold">+3.2%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 总体资产 */}
+            <div className="rounded-2xl glass-card p-4 hover:scale-[1.02] transition-all duration-300 animate-[fadeInUp_0.6s_ease-out_1.2s_both]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-white/70 font-medium">系统总览</div>
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 text-xs text-emerald-400 font-medium">
+                  <Shield className="w-3.5 h-3.5" />
+                  监控中
+                </div>
+              </div>
+              <div className="mt-3 text-3xl tracking-tight text-white">
+                {isLoading ? (
+                  <div className="loading-shimmer h-10 w-24 rounded-lg"></div>
+                ) : (
+                  stats.total_devices
                 )}
               </div>
-            </div>
-
-            {/* 快速操作 */}
-            <div className="neumorphic-card p-6 lg:p-8">
-              <div className="flex items-center gap-4 mb-6 lg:mb-8">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic-lg">
-                  <Zap className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-h3 lg:text-h2 gradient-text">快速操作</h2>
-                  <p className="text-body-sm lg:text-body text-muted-foreground">常用功能快速入口</p>
-                </div>
-              </div>
-
-              <div className="space-y-4 lg:space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                  <Link href="/realtime">
-                    <div className="group p-4 lg:p-6 text-left bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-2xl hover:border-emerald-400 hover:shadow-neumorphic-md hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center gap-3 lg:gap-4 mb-3 lg:mb-4">
-                        <div className="p-2 lg:p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-neumorphic-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                          <Activity className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                        </div>
-                        <span className="text-body lg:text-h4 font-bold text-foreground group-hover:text-emerald-700 transition-colors">实时数据</span>
-                      </div>
-                      <p className="text-caption lg:text-body-sm text-muted-foreground group-hover:text-foreground transition-colors">查看实时采集数据</p>
-                    </div>
-                  </Link>
-
-                  <Link href="/devices">
-                    <div className="group p-4 lg:p-6 text-left bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl hover:border-purple-400 hover:shadow-neumorphic-md hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center gap-3 lg:gap-4 mb-3 lg:mb-4">
-                        <div className="p-2 lg:p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-neumorphic-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                          <HardDrive className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                        </div>
-                        <span className="text-body lg:text-h4 font-bold text-foreground group-hover:text-purple-700 transition-colors">设备管理</span>
-                      </div>
-                      <p className="text-caption lg:text-body-sm text-muted-foreground group-hover:text-foreground transition-colors">管理PLC设备</p>
-                    </div>
-                  </Link>
-
-                  <Link href="/history">
-                    <div className="group p-4 lg:p-6 text-left bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl hover:border-indigo-400 hover:shadow-neumorphic-md hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center gap-3 lg:gap-4 mb-3 lg:mb-4">
-                        <div className="p-2 lg:p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-neumorphic-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                          <History className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                        </div>
-                        <span className="text-body lg:text-h4 font-bold text-foreground group-hover:text-indigo-700 transition-colors">历史数据</span>
-                      </div>
-                      <p className="text-caption lg:text-body-sm text-muted-foreground group-hover:text-foreground transition-colors">查看历史记录</p>
-                    </div>
-                  </Link>
-
-                  <Link href="/statistics">
-                    <div className="group p-4 lg:p-6 text-left bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl hover:border-blue-400 hover:shadow-neumorphic-md hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="flex items-center gap-3 lg:gap-4 mb-3 lg:mb-4">
-                        <div className="p-2 lg:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-neumorphic-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                          <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
-                        </div>
-                        <span className="text-body lg:text-h4 font-bold text-foreground group-hover:text-blue-700 transition-colors">数据统计</span>
-                      </div>
-                      <p className="text-caption lg:text-body-sm text-muted-foreground group-hover:text-foreground transition-colors">数据分析统计</p>
-                    </div>
-                  </Link>
-                </div>
-
-                {/* 额外的快速操作 */}
-                <div className="pt-4 lg:pt-6 border-t border-border">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-                    <Link href="/settings">
-                      <Button variant="outline" size="lg" className="w-full justify-start gap-2 lg:gap-3 shadow-neumorphic-sm hover:shadow-neumorphic mobile-btn">
-                        <Settings className="h-4 w-4 lg:h-5 lg:w-5" />
-                        <span className="text-body-sm lg:text-body">设置</span>
-                      </Button>
-                    </Link>
-                    <Link href="/groups">
-                      <Button variant="outline" size="lg" className="w-full justify-start gap-2 lg:gap-3 shadow-neumorphic-sm hover:shadow-neumorphic mobile-btn">
-                        <Layers className="h-4 w-4 lg:h-5 lg:w-5" />
-                        <span className="text-body-sm lg:text-body">分组</span>
-                      </Button>
-                    </Link>
-                    <Link href="/users">
-                      <Button variant="outline" size="lg" className="w-full justify-start gap-2 lg:gap-3 shadow-neumorphic-sm hover:shadow-neumorphic mobile-btn">
-                        <Users className="h-4 w-4 lg:h-5 lg:w-5" />
-                        <span className="text-body-sm lg:text-body">用户</span>
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={loadDashboardData}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span className="text-sm font-semibold">刷新</span>
+                </button>
+                <Link href="/realtime" className="flex-1">
+                  <button className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors">
+                    <Activity className="w-4 h-4" />
+                    <span className="text-sm font-semibold">监控</span>
+                  </button>
+                </Link>
               </div>
             </div>
           </div>
-        </div>
-      </MainLayout>
-    </AuthGuard>
+    </div>
   )
 }

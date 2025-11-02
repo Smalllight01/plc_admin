@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './providers'
+import { AuthGuard } from '@/components/auth/auth-guard'
+import { MainLayout } from '@/components/layout/main-layout'
 
 // 优化字体配置 - 主字体用于界面，等宽字体用于数据和代码
 const inter = Inter({
@@ -32,10 +34,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-CN" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased">
+    <html lang="zh-CN" className={`${inter.variable} ${jetbrainsMono.variable} dark`}>
+      <body className="font-sans antialiased bg-gradient-surface">
         <Providers>
-          {children}
+          <AuthGuard>
+            {children}
+          </AuthGuard>
           <Toaster />
         </Providers>
       </body>

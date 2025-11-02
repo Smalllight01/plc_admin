@@ -38,8 +38,6 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
-import { AuthGuard } from '@/components/auth/auth-guard'
-import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { User, CreateUserRequest, UpdateUserRequest, UserRole, Group } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
@@ -316,64 +314,65 @@ export default function UsersPage() {
   const isLoading_ = isLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   return (
-    <AuthGuard requireAdmin>
-      <MainLayout>
-        <div className="w-full max-w-none p-6 space-y-6">
-          {/* 页面标题 - 优化版本 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
+    <div className="w-full max-w-none p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+          {/* 页面标题 - Novara风格 */}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">用户管理</h1>
-                    <p className="text-blue-600 mt-1 font-medium">
-                      管理系统用户，控制访问权限和角色分配
-                    </p>
-                  </div>
-                </div>
+                <h1 className="text-2xl md:text-3xl tracking-tight text-white">用户管理</h1>
+                <p className="text-sm md:text-base text-white/70 font-medium mt-1">管理系统用户账户，控制访问权限和角色分配</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  size="sm"
+                  //size="lg"
                   onClick={() => refetch()}
                   disabled={isLoading_}
-                  className="bg-white hover:bg-gray-50"
+                  className="bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-200"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading_ ? 'animate-spin' : ''}`} />
-                  刷新数据
+                  <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 mr-2 ${isLoading_ ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">刷新数据</span>
+                  <span className="sm:hidden">刷新</span>
                 </Button>
-                
+
                 <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                   <DialogTrigger asChild>
-                    <Button onClick={resetForm} className="bg-blue-500 hover:bg-blue-600">
-                      <Plus className="h-4 w-4 mr-2" />
-                      新建用户
+                    <Button
+                      onClick={resetForm}
+                      //size="lg"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors"
+                    >
+                      <Plus className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
+                      <span className="hidden sm:inline">新建用户</span>
+                      <span className="sm:hidden">新建</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="sm:max-w-md bg-surface backdrop-blur-xl border border-white/10 text-white">
                     <DialogHeader>
-                      <DialogTitle>创建新用户</DialogTitle>
-                      <DialogDescription>
+                      <DialogTitle className="flex items-center gap-3 text-xl">
+                        <div className="p-3 rounded-2xl bg-accent/20 backdrop-blur ring-1 ring-accent/30">
+                          <Plus className="h-6 w-6 text-accent" />
+                        </div>
+                        <span className="text-white font-bold">创建新用户</span>
+                      </DialogTitle>
+                      <DialogDescription className="text-white/70">
                         创建一个新的系统用户账户
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="username">用户名 *</Label>
+                    <div className="grid gap-6 py-4">
+                      <div className="space-y-3">
+                        <Label htmlFor="username" className="text-white font-semibold">用户名 *</Label>
                         <Input
                           id="username"
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                           placeholder="请输入用户名"
                           disabled={createMutation.isPending}
+                          className="h-12 text-white placeholder:text-white/50"
                         />
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="password">密码 *</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="password" className="text-white font-semibold">密码 *</Label>
                         <div className="relative">
                           <Input
                             id="password"
@@ -382,20 +381,19 @@ export default function UsersPage() {
                             onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                             placeholder="请输入密码"
                             disabled={createMutation.isPending}
+                            className="h-12 text-white placeholder:text-white/50"
                           />
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full px-3"
+                            className="glass-btn absolute right-2 top-2 h-8 w-8 p-0"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="email">邮箱</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="email" className="text-white font-semibold">邮箱</Label>
                         <Input
                           id="email"
                           type="email"
@@ -403,52 +401,54 @@ export default function UsersPage() {
                           onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                           placeholder="请输入邮箱地址（可选）"
                           disabled={createMutation.isPending}
+                          className="h-12 text-white placeholder:text-white/50"
                         />
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="full_name">姓名</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="full_name" className="text-white font-semibold">姓名</Label>
                         <Input
                           id="full_name"
                           value={formData.full_name}
                           onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                           placeholder="请输入真实姓名（可选）"
                           disabled={createMutation.isPending}
+                          className="h-12 text-white placeholder:text-white/50"
                         />
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="role">角色 *</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="role" className="text-white font-semibold">角色 *</Label>
                         <Select
                           value={formData.role}
                           onValueChange={(value: UserRole) => setFormData(prev => ({ ...prev, role: value }))}
                           disabled={createMutation.isPending}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
                             <SelectValue placeholder="选择用户角色" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">普通用户</SelectItem>
-                            <SelectItem value="admin">管理员</SelectItem>
-                            <SelectItem value="super_admin">超级管理员</SelectItem>
+                          <SelectContent className="glass-surface border border-white/10">
+                            <SelectItem value="user" className="text-white">普通用户</SelectItem>
+                            <SelectItem value="admin" className="text-white">管理员</SelectItem>
+                            <SelectItem value="super_admin" className="text-white">超级管理员</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="group">分组</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="group" className="text-white font-semibold">分组</Label>
                         <Select
                           value={formData.group_id?.toString() || 'none'}
-                          onValueChange={(value) => setFormData(prev => ({ 
-                            ...prev, 
-                            group_id: value === 'none' ? undefined : parseInt(value) 
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            group_id: value === 'none' ? undefined : parseInt(value)
                           }))}
                           disabled={createMutation.isPending}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
                             <SelectValue placeholder="选择用户分组（可选）" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">无分组</SelectItem>
+                          <SelectContent className="glass-surface border border-white/10">
+                            <SelectItem value="none" className="text-white">无分组</SelectItem>
                             {groupsData?.data?.map((group: Group) => (
-                              <SelectItem key={group.id} value={group.id.toString()}>
+                              <SelectItem key={group.id} value={group.id.toString()} className="text-white">
                                 {group.name}
                               </SelectItem>
                             ))}
@@ -456,19 +456,20 @@ export default function UsersPage() {
                         </Select>
                       </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="gap-3">
                       <Button
-                        variant="outline"
+                        className="glass-btn"
                         onClick={() => setShowCreateDialog(false)}
                         disabled={createMutation.isPending}
                       >
                         取消
                       </Button>
                       <Button
+                        className="glass-btn-primary"
                         onClick={handleCreate}
                         disabled={createMutation.isPending}
                       >
-                        {createMutation.isPending ? '创建中...' : '创建'}
+                        {createMutation.isPending ? '创建中...' : '创建用户'}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -477,200 +478,237 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* 搜索和筛选 - 优化版本 */}
-          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-            <CardContent className="pt-6">
-              <div className="flex flex-col lg:flex-row gap-6">
-                {/* 搜索和筛选 */}
-                <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        placeholder="搜索用户名、邮箱或姓名..."
-                        value={searchTerm}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="pl-11 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                      />
-                    </div>
+          {/* 搜索和筛选 - Novara风格 */}
+          <div className="rounded-2xl glass-card p-4 animate-[fadeInUp_0.6s_ease-out_0.6s_both]">
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+              {/* 搜索和筛选 */}
+              <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/50" />
+                    <Input
+                      placeholder="搜索用户名、邮箱或姓名..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="pl-12 h-12 bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 transition-all duration-200"
+                    />
                   </div>
-                  <div className="w-full sm:w-56">
-                    <Select value={roleFilter} onValueChange={handleRoleFilter}>
-                      <SelectTrigger className="h-11 border-gray-200 focus:border-blue-500">
-                        <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                        <SelectValue placeholder="筛选角色" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">👥 所有角色</SelectItem>
-                        <SelectItem value="user">👤 普通用户</SelectItem>
-                        <SelectItem value="admin">🛡️ 管理员</SelectItem>
-                        <SelectItem value="super_admin">⚡ 超级管理员</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </div>
+                <div className="w-full sm:w-56">
+                  <Select value={roleFilter} onValueChange={handleRoleFilter}>
+                    <SelectTrigger className="h-12 bg-white/10 backdrop-blur border border-white/20 text-white focus:bg-white/20 focus:border-white/30">
+                      <Filter className="h-4 w-4 mr-2 text-white/50" />
+                      <SelectValue placeholder="筛选角色" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-surface backdrop-blur border border-white/10">
+                      <SelectItem value="all" className="text-white">所有角色</SelectItem>
+                      <SelectItem value="user" className="text-white">普通用户</SelectItem>
+                      <SelectItem value="admin" className="text-white">管理员</SelectItem>
+                      <SelectItem value="super_admin" className="text-white">超级管理员</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* 用户列表 - 优化版本 */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600" />
+          {/* 用户列表 - Novara风格 */}
+          <div className="rounded-2xl glass-card p-4 md:p-6 animate-[fadeInUp_0.6s_ease-out_0.7s_both]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-blue-500/20 backdrop-blur ring-1 ring-blue-500/30">
+                  <Users className="h-6 w-6 text-blue-400" />
                 </div>
                 <div>
-                  <span className="text-gray-900">用户列表</span>
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    ({users.length} 个用户)
-                  </span>
+                  <h2 className="text-xl font-semibold tracking-tight text-white">用户列表</h2>
+                  <p className="text-sm text-white/70 mt-1">
+                    管理系统用户账户，点击操作按钮进行编辑或删除
+                  </p>
                 </div>
-              </CardTitle>
-              <CardDescription>
-                管理系统用户账户，点击操作按钮进行编辑或删除
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </div>
+              <div className="hidden sm:block">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm font-medium">
+                  {users.length} 个用户
+                </span>
+              </div>
+            </div>
+            <div className="p-0">
               {error ? (
-                <div className="text-center py-8">
-                  <p className="text-red-600">加载用户列表失败</p>
+                <div className="text-center py-16">
+                  <div className="p-6 rounded-2xl glass-surface-light inline-block mb-6">
+                    <Users className="h-16 w-16 text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">加载用户列表失败</h3>
+                  <p className="text-white/60 mb-6 max-w-md mx-auto">
+                    请检查网络连接或稍后重试
+                  </p>
                   <Button
-                    variant="outline"
+                    className="glass-btn-primary"
                     onClick={() => refetch()}
-                    className="mt-2"
                   >
+                    <RefreshCw className="h-5 w-5 mr-2" />
                     重试
                   </Button>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>用户名</TableHead>
-                      <TableHead>姓名</TableHead>
-                      <TableHead>邮箱</TableHead>
-                      <TableHead>角色</TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>创建时间</TableHead>
-                      <TableHead>最后登录</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8">
-                          <div className="flex items-center justify-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                            <span>加载中...</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : users.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8">
-                          <div className="flex flex-col items-center space-y-2">
-                            <Users className="h-8 w-8 text-gray-400" />
-                            <p className="text-gray-500">
-                              {searchTerm || roleFilter !== 'all' ? '没有找到匹配的用户' : '暂无用户'}
-                            </p>
-                            {!searchTerm && roleFilter === 'all' && (
-                              <Button
-                                variant="outline"
-                                onClick={() => setShowCreateDialog(true)}
-                              >
-                                创建第一个用户
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      users.map((user) => {
-                        const roleInfo = getRoleInfo(user.role)
-                        return (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">
-                              {user.username}
-                            </TableCell>
-                            <TableCell>
-                              {user.full_name || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {user.email || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={roleInfo.variant} className="flex items-center space-x-1 w-fit">
-                                <roleInfo.icon className="h-3 w-3" />
-                                <span>{roleInfo.label}</span>
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                                {user.is_active ? '活跃' : '禁用'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {formatDateTime(user.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              {user.last_login ? formatDateTime(user.last_login) : '从未登录'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end space-x-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(user)}
-                                  disabled={isLoading_}
-                                  className="hover:bg-blue-50 hover:text-blue-600"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(user)}
-                                  disabled={isLoading_}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">用户名</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">姓名</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">邮箱</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">角色</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">状态</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">创建时间</th>
+                        <th className="text-left px-6 py-4 text-sm font-semibold text-white/70">最后登录</th>
+                        <th className="text-right px-6 py-4 text-sm font-semibold text-white/70">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={8} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center space-y-4">
+                              <div className="p-4 rounded-2xl glass-surface-light">
+                                <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-accent"></div>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                              <span className="text-white/70">加载用户数据中...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : users.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="text-center py-16">
+                            <div className="flex flex-col items-center space-y-4">
+                              <div className="p-6 rounded-2xl glass-surface-light">
+                                <Users className="h-16 w-16 text-white/60" />
+                              </div>
+                              <h3 className="text-xl font-bold text-white">
+                                {searchTerm || roleFilter !== 'all' ? '没有找到匹配的用户' : '暂无用户'}
+                              </h3>
+                              <p className="text-white/60 max-w-md mx-auto">
+                                {searchTerm || roleFilter !== 'all' ? '尝试调整搜索条件' : '创建第一个系统用户'}
+                              </p>
+                              {!searchTerm && roleFilter === 'all' && (
+                                <Button
+                                  className="glass-btn-primary"
+                                  onClick={() => setShowCreateDialog(true)}
+                                >
+                                  <Plus className="h-5 w-5 mr-2" />
+                                  创建第一个用户
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        users.map((user) => {
+                          const roleInfo = getRoleInfo(user.role)
+                          return (
+                            <tr key={user.id} className="hover:bg-white/5 transition-colors duration-200">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 rounded-2xl bg-blue-500/20 backdrop-blur ring-1 ring-blue-500/30">
+                                    <UserIcon className="h-4 w-4 text-blue-400" />
+                                  </div>
+                                  <div className="font-semibold text-white text-sm">{user.username}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-white/80">
+                                {user.full_name || '-'}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-white/80">
+                                {user.email || '-'}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${
+                                  user.role === 'super_admin'
+                                    ? 'bg-red-500/20 backdrop-blur ring-1 ring-red-500/30 text-red-400'
+                                    : user.role === 'admin'
+                                    ? 'bg-accent/20 backdrop-blur ring-1 ring-accent/30 text-accent'
+                                    : 'glass-surface-light text-white/80'
+                                }`}>
+                                  <roleInfo.icon className="h-3.5 w-3.5" />
+                                  <span className="text-xs font-semibold">{roleInfo.label}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${
+                                  user.is_active
+                                    ? 'bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30 text-emerald-400'
+                                    : 'glass-surface-light text-white/60'
+                                }`}>
+                                  <span className="text-xs font-semibold">
+                                    {user.is_active ? '活跃' : '禁用'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-white/60">
+                                {formatDateTime(user.created_at)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-white/60">
+                                {user.last_login ? formatDateTime(user.last_login) : '从未登录'}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    className="glass-btn h-8 w-8 p-0"
+                                    size="sm"
+                                    onClick={() => handleEdit(user)}
+                                    disabled={isLoading_}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    className="glass-btn h-8 w-8 p-0 hover:bg-red-500/20 hover:border-red-500/30"
+                                    size="sm"
+                                    onClick={() => handleDelete(user)}
+                                    disabled={isLoading_}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-400" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* 编辑用户对话框 */}
+          {/* 编辑用户对话框 - Novara深色玻璃拟态风格 */}
           <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="sm:max-w-md glass-surface border border-white/10">
               <DialogHeader>
-                <DialogTitle>编辑用户</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-3 rounded-2xl bg-accent/20 backdrop-blur ring-1 ring-accent/30">
+                    <Edit className="h-6 w-6 text-accent" />
+                  </div>
+                  <span className="text-white font-bold">编辑用户</span>
+                </DialogTitle>
+                <DialogDescription className="text-white/70">
                   修改用户的基本信息和权限
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-username">用户名 *</Label>
+              <div className="grid gap-6 py-4">
+                <div className="space-y-3">
+                  <Label htmlFor="edit-username" className="text-white font-semibold">用户名 *</Label>
                   <Input
                     id="edit-username"
                     value={formData.username}
                     onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                     placeholder="请输入用户名"
                     disabled={updateMutation.isPending}
+                    className="h-12 text-white placeholder:text-white/50"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-password">新密码</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-password" className="text-white font-semibold">新密码</Label>
                   <div className="relative">
                     <Input
                       id="edit-password"
@@ -679,20 +717,19 @@ export default function UsersPage() {
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       placeholder="留空则不修改密码"
                       disabled={updateMutation.isPending}
+                      className="h-12 text-white placeholder:text-white/50"
                     />
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
+                      className="glass-btn absolute right-2 top-2 h-8 w-8 p-0"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-email">邮箱</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-email" className="text-white font-semibold">邮箱</Label>
                   <Input
                     id="edit-email"
                     type="email"
@@ -700,52 +737,54 @@ export default function UsersPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="请输入邮箱地址（可选）"
                     disabled={updateMutation.isPending}
+                    className="h-12 text-white placeholder:text-white/50"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-full_name">姓名</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-full_name" className="text-white font-semibold">姓名</Label>
                   <Input
                     id="edit-full_name"
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                     placeholder="请输入真实姓名（可选）"
                     disabled={updateMutation.isPending}
+                    className="h-12 text-white placeholder:text-white/50"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-role">角色 *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-role" className="text-white font-semibold">角色 *</Label>
                   <Select
                     value={formData.role}
                     onValueChange={(value: UserRole) => setFormData(prev => ({ ...prev, role: value }))}
                     disabled={updateMutation.isPending}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
                       <SelectValue placeholder="选择用户角色" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">普通用户</SelectItem>
-                      <SelectItem value="admin">管理员</SelectItem>
-                      <SelectItem value="super_admin">超级管理员</SelectItem>
+                    <SelectContent className="glass-surface border border-white/10">
+                      <SelectItem value="user" className="text-white">普通用户</SelectItem>
+                      <SelectItem value="admin" className="text-white">管理员</SelectItem>
+                      <SelectItem value="super_admin" className="text-white">超级管理员</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-group">分组</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-group" className="text-white font-semibold">分组</Label>
                   <Select
                     value={formData.group_id?.toString() || 'none'}
-                    onValueChange={(value) => setFormData(prev => ({ 
-                      ...prev, 
-                      group_id: value === 'none' ? undefined : parseInt(value) 
+                    onValueChange={(value) => setFormData(prev => ({
+                      ...prev,
+                      group_id: value === 'none' ? undefined : parseInt(value)
                     }))}
                     disabled={updateMutation.isPending}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
                       <SelectValue placeholder="选择用户分组（可选）" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">无分组</SelectItem>
+                    <SelectContent className="glass-surface border border-white/10">
+                      <SelectItem value="none" className="text-white">无分组</SelectItem>
                       {groupsData?.data?.map((group: Group) => (
-                        <SelectItem key={group.id} value={group.id.toString()}>
+                        <SelectItem key={group.id} value={group.id.toString()} className="text-white">
                           {group.name}
                         </SelectItem>
                       ))}
@@ -753,9 +792,9 @@ export default function UsersPage() {
                   </Select>
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="gap-3">
                 <Button
-                  variant="outline"
+                  className="glass-btn"
                   onClick={() => {
                     setShowEditDialog(false)
                     setEditingUser(null)
@@ -766,16 +805,15 @@ export default function UsersPage() {
                   取消
                 </Button>
                 <Button
+                  className="glass-btn-primary"
                   onClick={handleUpdate}
                   disabled={updateMutation.isPending}
                 >
-                  {updateMutation.isPending ? '更新中...' : '更新'}
+                  {updateMutation.isPending ? '更新中...' : '更新用户'}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
-      </MainLayout>
-    </AuthGuard>
   )
 }

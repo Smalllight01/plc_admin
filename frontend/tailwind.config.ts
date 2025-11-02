@@ -54,6 +54,12 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
   			},
+  			// 新增玻璃拟态风格色彩
+  			surface: {
+  				DEFAULT: 'rgba(24, 24, 27, 0.95)',
+  				light: 'rgba(39, 39, 42, 0.8)',
+  				dark: 'rgba(17, 17, 19, 0.98)'
+  			},
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -121,6 +127,31 @@ const config: Config = {
   					transform: 'scale(1)',
   					opacity: '1'
   				}
+  			},
+  			// 新增Novara风格的动画
+  			'fadeInUp': {
+  				from: { opacity: '0', transform: 'translateY(20px)', filter: 'blur(4px)' },
+  				to: { opacity: '1', transform: 'translateY(0)', filter: 'blur(0px)' }
+  			},
+  			'fadeInDown': {
+  				from: { opacity: '0', transform: 'translateY(-20px)', filter: 'blur(4px)' },
+  				to: { opacity: '1', transform: 'translateY(0)', filter: 'blur(0px)' }
+  			},
+  			'fadeInLeft': {
+  				from: { opacity: '0', transform: 'translateX(-30px)', filter: 'blur(4px)' },
+  				to: { opacity: '1', transform: 'translateX(0)', filter: 'blur(0px)' }
+  			},
+  			'fadeInRight': {
+  				from: { opacity: '0', transform: 'translateX(30px)', filter: 'blur(4px)' },
+  				to: { opacity: '1', transform: 'translateX(0)', filter: 'blur(0px)' }
+  			},
+  			'slideInLeft': {
+  				from: { opacity: '0', transform: 'translateX(-40px)', filter: 'blur(6px)' },
+  				to: { opacity: '1', transform: 'translateX(0)', filter: 'blur(0px)' }
+  			},
+  			'fadeIn': {
+  				from: { opacity: '0', filter: 'blur(2px)' },
+  				to: { opacity: '1', filter: 'blur(0px)' }
   			}
   		},
   		animation: {
@@ -130,7 +161,14 @@ const config: Config = {
   			'slide-up': 'slideUp 0.3s ease-out',
   			'slide-down': 'slideDown 0.3s ease-out',
   			'fade-in': 'fadeIn 0.5s ease-out',
-  			'scale-in': 'scaleIn 0.2s ease-out'
+  			'scale-in': 'scaleIn 0.2s ease-out',
+  			// Novara风格的动画类
+  			'fadeInUp': 'fadeInUp 0.6s ease-out',
+  			'fadeInDown': 'fadeInDown 0.6s ease-out',
+  			'fadeInLeft': 'fadeInLeft 0.8s ease-out',
+  			'fadeInRight': 'fadeInRight 0.8s ease-out',
+  			'slideInLeft': 'slideInLeft 0.8s ease-out',
+  			'fadeIn': 'fadeIn 0.6s ease-out'
   		},
   		boxShadow: {
   			'neumorphic': 'var(--shadow)',

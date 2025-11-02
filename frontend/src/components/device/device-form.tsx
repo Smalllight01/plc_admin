@@ -21,11 +21,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AddressConfig, type AddressConfig as AddressConfigType } from '@/components/device/address-config'
 import { Device, Group, CreateDeviceRequest, UpdateDeviceRequest } from '@/lib/api'
-import { Server, Settings, Database, AlertCircle, Plus, Zap, Plug, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
+import {
+  Server,
+  Settings,
+  Database,
+  AlertCircle,
+  Plus,
+  Zap,
+  Plug,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Monitor,
+  Network,
+  HardDrive
+} from 'lucide-react'
 
 // 协议配置模板
 const PROTOCOL_TEMPLATES = {
@@ -198,11 +211,6 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
       newErrors.port = '端口号必须在1-65535之间'
     }
 
-    // 注释掉地址验证，允许创建设备时不配置地址
-    // if (!formData.addresses || formData.addresses.length === 0) {
-    //   newErrors.addresses = '至少需要配置一个采集地址'
-    // }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -233,7 +241,6 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
       console.error('onSubmit 值:', onSubmit)
     }
   }
-
 
   const handleAddressesChange = (addresses: AddressConfigType[]) => {
     setFormData(prev => ({ ...prev, addresses }))
@@ -327,20 +334,23 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
 
   return (
     <form>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden flex flex-col">
-        <DialogHeader className="border-b pb-4 px-6 pt-6 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Server className="h-5 w-5 text-blue-600" />
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden flex flex-col glass-surface border border-white/10">
+        <DialogHeader className="border-b border-white/10 pb-6 px-6 pt-6 flex-shrink-0 animate-[fadeInDown_0.6s_ease-out]">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-accent/20 backdrop-blur ring-1 ring-accent/30 animate-[fadeInUp_0.6s_ease-out_0.2s_both]">
+              <Server className="h-6 w-6 text-accent" />
             </div>
-            <div>
-              <DialogTitle className="text-lg flex items-center gap-2">
+            <div className="flex-1">
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-3 animate-[fadeInUp_0.6s_ease-out_0.3s_both]">
                 {isEditMode ? '编辑设备' : '添加设备'}
-                <Badge variant="outline" className="text-xs">
+                <Badge
+                  variant="outline"
+                  className="text-xs glass-surface-light border border-white/20 text-white/80 animate-[fadeInUp_0.6s_ease-out_0.4s_both]"
+                >
                   {isEditMode ? '编辑模式' : '新建模式'}
                 </Badge>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/70 animate-[fadeInUp_0.6s_ease-out_0.5s_both]">
                 {isEditMode ? '修改设备配置信息' : '配置新的工业设备连接'}
               </DialogDescription>
             </div>
@@ -349,17 +359,23 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
 
         {/* 标签导航 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
-          <div className="px-6 pt-4 flex-shrink-0">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="basic" className="flex items-center gap-2">
+          <div className="px-6 pt-6 flex-shrink-0 animate-[fadeInUp_0.6s_ease-out_0.6s_both]">
+            <TabsList className="grid w-full grid-cols-2 glass-surface-light border border-white/10 p-1">
+              <TabsTrigger
+                value="basic"
+                className="flex items-center gap-2 data-[state=active]:bg-accent/20 backdrop-blur ring-1 ring-accent/30 data-[state=active]:text-accent transition-all duration-200 text-white/80"
+              >
                 <Settings className="h-4 w-4" />
                 基本配置
               </TabsTrigger>
-              <TabsTrigger value="addresses" className="flex items-center gap-2">
+              <TabsTrigger
+                value="addresses"
+                className="flex items-center gap-2 data-[state=active]:bg-accent/20 backdrop-blur ring-1 ring-accent/30 data-[state=active]:text-accent transition-all duration-200 text-white/80"
+              >
                 <Database className="h-4 w-4" />
                 采集地址
                 {formData.addresses.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
+                  <Badge variant="secondary" className="ml-1 glass-surface border border-white/20 text-white/80">
                     {formData.addresses.length}
                   </Badge>
                 )}
@@ -369,94 +385,116 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             <TabsContent value="basic" className="space-y-6 mt-0">
-            {/* 基本配置卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Server className="h-4 w-4" />
-                  设备基本信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">
-                      设备名称 <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="例如：车间1号PLC"
-                      className={errors.name ? 'border-red-500' : ''}
-                    />
-                    {errors.name && (
-                      <p className="text-sm text-red-500 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {errors.name}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">设备描述</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder="设备用途、位置等描述信息"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
-                      checked={formData.is_active}
-                      onCheckedChange={(checked) => handleInputChange('is_active', checked)}
-                    />
-                    <Label htmlFor="is_active">启用设备</Label>
+              {/* 基本配置卡片 - Novara风格 */}
+              <div className="glass-card rounded-3xl animate-[fadeInUp_0.6s_ease-out_0.7s_both]">
+                <div className="p-6 lg:p-8 border-b border-white/10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 rounded-2xl bg-blue-500/20 backdrop-blur ring-1 ring-blue-500/30">
+                      <Monitor className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">设备基本信息</h3>
+                      <p className="text-sm text-white/60">配置设备的基本属性和分组信息</p>
+                    </div>
                   </div>
                 </div>
+                <div className="p-6 lg:p-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="name" className="text-sm font-semibold text-white/80">
+                          设备名称 <span className="text-red-400">*</span>
+                        </Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          placeholder="例如：车间1号PLC"
+                          className={`h-12 ${errors.name ? 'border-red-500/50 ring-1 ring-red-500/30' : ''}`}
+                        />
+                        {errors.name && (
+                          <p className="text-sm text-red-400 flex items-center gap-2 animate-[fadeIn_0.3s_ease-out]">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.name}
+                          </p>
+                        )}
+                      </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="group_id">
-                      设备分组 <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={formData.group_id.toString()}
-                      onValueChange={(value) => handleInputChange('group_id', parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择分组" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups.map((group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <div className="space-y-3">
+                        <Label htmlFor="description" className="text-sm font-semibold text-white/80">设备描述</Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => handleInputChange('description', e.target.value)}
+                          placeholder="设备用途、位置等描述信息"
+                          rows={3}
+                          className="glass-surface-light border border-white/10 text-white placeholder:text-white/50"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 rounded-2xl glass-surface-light border border-white/10">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center h-6 w-11 rounded-full bg-white/20 transition-colors duration-200 peer-checked:bg-accent/20 peer-checked:ring-1 peer-checked:ring-accent/30">
+                            <div className={`h-5 w-5 rounded-full bg-white shadow-lg transform transition-transform duration-200 ${
+                              formData.is_active ? 'translate-x-6 bg-accent' : 'translate-x-1'
+                            }`}></div>
+                          </div>
+                          <div>
+                            <Label htmlFor="is_active" className="text-sm font-semibold text-white cursor-pointer">启用设备</Label>
+                            <p className="text-xs text-white/60">启动后将开始采集数据</p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="is_active"
+                          checked={formData.is_active}
+                          onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="group_id" className="text-sm font-semibold text-white/80">
+                          设备分组 <span className="text-red-400">*</span>
+                        </Label>
+                        <Select
+                          value={formData.group_id.toString()}
+                          onValueChange={(value) => handleInputChange('group_id', parseInt(value))}
+                        >
+                          <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
+                            <SelectValue placeholder="选择分组" />
+                          </SelectTrigger>
+                          <SelectContent className="glass-surface border border-white/10">
+                            {groups.map((group) => (
+                              <SelectItem key={group.id} value={group.id.toString()} className="text-white">
+                                {group.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* 协议配置卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Plug className="h-4 w-4" />
-                  通信协议
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="plc_type">
-                      通信协议 <span className="text-red-500">*</span>
+              {/* 协议配置卡片 - Novara风格 */}
+              <div className="glass-card rounded-3xl animate-[fadeInUp_0.6s_ease-out_0.8s_both]">
+                <div className="p-6 lg:p-8 border-b border-white/10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 rounded-2xl bg-emerald-500/20 backdrop-blur ring-1 ring-emerald-500/30">
+                      <Network className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">通信协议</h3>
+                      <p className="text-sm text-white/60">选择设备支持的通信协议并配置连接参数</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 lg:p-8 space-y-8">
+                  <div className="space-y-4">
+                    <Label htmlFor="plc_type" className="text-sm font-semibold text-white/80">
+                      通信协议 <span className="text-red-400">*</span>
                     </Label>
                     <Select
                       value={formData.plc_type}
@@ -472,17 +510,17 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
                         handleInputChange('port', getDefaultPort(value))
                       }}
                     >
-                      <SelectTrigger className="bg-white">
+                      <SelectTrigger className="h-12 glass-surface-light border border-white/10 text-white">
                         <SelectValue placeholder="选择协议" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white">
+                      <SelectContent className="glass-surface border border-white/10">
                         {Object.entries(PROTOCOL_TEMPLATES).map(([key, template]) => (
-                          <SelectItem key={key} value={key}>
-                            <div className="flex items-center gap-2">
-                              <span>{template.icon}</span>
+                          <SelectItem key={key} value={key} className="text-white">
+                            <div className="flex items-center gap-3 py-2">
+                              <span className="text-lg">{template.icon}</span>
                               <div>
-                                <div className="font-medium">{template.name}</div>
-                                <div className="text-xs text-gray-500">{template.description}</div>
+                                <div className="font-medium text-white">{template.name}</div>
+                                <div className="text-xs text-white/60">{template.description}</div>
                               </div>
                             </div>
                           </SelectItem>
@@ -491,31 +529,31 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="ip_address">
-                        IP地址 <span className="text-red-500">*</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <Label htmlFor="ip_address" className="text-sm font-semibold text-white/80">
+                        IP地址 <span className="text-red-400">*</span>
                       </Label>
                       <Input
                         id="ip_address"
                         value={formData.ip_address}
                         onChange={(e) => handleInputChange('ip_address', e.target.value)}
                         placeholder="192.168.1.100"
-                        className={errors.ip_address ? 'border-red-500' : ''}
+                        className={`h-12 ${errors.ip_address ? 'border-red-500/50 ring-1 ring-red-500/30' : ''}`}
                       />
                       {errors.ip_address && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
+                        <p className="text-sm text-red-400 flex items-center gap-2 animate-[fadeIn_0.3s_ease-out]">
+                          <AlertCircle className="h-4 w-4" />
                           {errors.ip_address}
                         </p>
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="port">
-                        端口号 <span className="text-red-500">*</span>
+                    <div className="space-y-4">
+                      <Label htmlFor="port" className="text-sm font-semibold text-white/80">
+                        端口号 <span className="text-red-400">*</span>
                       </Label>
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-3 items-center">
                         <Input
                           id="port"
                           type="number"
@@ -523,129 +561,151 @@ export function DeviceForm({ device, groups, onSubmit, onCancel, loading }: Devi
                           max="65535"
                           value={formData.port}
                           onChange={(e) => handleInputChange('port', parseInt(e.target.value) || 502)}
-                          className={errors.port ? 'border-red-500' : ''}
+                          className={`h-12 flex-1 ${errors.port ? 'border-red-500/50 ring-1 ring-red-500/30' : ''}`}
                         />
                         <Button
                           type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={testConnection}
                           disabled={connectionTest === 'testing' || !formData.ip_address || !formData.port}
-                          className="whitespace-nowrap flex-shrink-0"
+                          className="h-12 px-4 glass-btn flex-shrink-0 disabled:opacity-50"
                         >
                           {connectionTest === 'testing' ? (
                             <>
-                              <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                               测试中
                             </>
                           ) : connectionTest === 'success' ? (
                             <>
-                              <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                              <CheckCircle className="h-4 w-4 mr-2 text-emerald-400" />
                               成功
                             </>
                           ) : connectionTest === 'error' ? (
                             <>
-                              <XCircle className="h-4 w-4 mr-1 text-red-500" />
+                              <XCircle className="h-4 w-4 mr-2 text-red-400" />
                               失败
                             </>
                           ) : (
                             <>
-                              <Zap className="h-4 w-4 mr-1" />
+                              <Zap className="h-4 w-4 mr-2" />
                               测试连接
                             </>
                           )}
                         </Button>
                       </div>
                       {errors.port && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
+                        <p className="text-sm text-red-400 flex items-center gap-2 animate-[fadeIn_0.3s_ease-out]">
+                          <AlertCircle className="h-4 w-4" />
                           {errors.port}
                         </p>
                       )}
                       {errors.connection && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
+                        <p className="text-sm text-red-400 flex items-center gap-2 animate-[fadeIn_0.3s_ease-out]">
+                          <AlertCircle className="h-4 w-4" />
                           {errors.connection}
                         </p>
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* 协议说明 */}
-                {currentProtocol && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">
-                      {currentProtocol.icon} {currentProtocol.name}
-                    </h4>
-                    <p className="text-sm text-blue-700 mb-2">{currentProtocol.description}</p>
-                    <div className="text-xs text-blue-600">
-                      地址示例: {currentProtocol.addressExample} | 默认端口: {currentProtocol.defaultPort}
+                  {/* 协议说明 */}
+                  {currentProtocol && (
+                    <div className="glass-card-light p-6 rounded-2xl animate-[fadeInUp_0.6s_ease-out]">
+                      <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                        <span className="text-lg">{currentProtocol.icon}</span>
+                        {currentProtocol.name}
+                      </h4>
+                      <p className="text-sm text-white/70 mb-3">{currentProtocol.description}</p>
+                      <div className="text-xs text-white/60 flex gap-4">
+                        <span>地址示例: {currentProtocol.addressExample}</span>
+                        <span>默认端口: {currentProtocol.defaultPort}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 快速操作卡片 - Novara风格 */}
+              <div className="glass-card rounded-3xl animate-[fadeInUp_0.6s_ease-out_0.9s_both]">
+                <div className="p-6 lg:p-8 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-2xl bg-purple-500/20 backdrop-blur ring-1 ring-purple-500/30">
+                      <Zap className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">快速操作</h3>
+                      <p className="text-sm text-white/60">快速添加常用配置模板</p>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 快速操作卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">快速操作</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addAddressTemplate}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    添加常用地址
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <div className="p-6 lg:p-8">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      type="button"
+                      onClick={addAddressTemplate}
+                      className="glass-btn flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      添加常用地址
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="addresses" className="mt-0">
-            <Card>
-              <CardContent className="p-6">
-                <AddressConfig
-                  value={formData.addresses}
-                  onChange={handleAddressesChange}
-                  disabled={loading}
-                  plcType={formData.plc_type}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="addresses" className="mt-0">
+              <div className="glass-card rounded-3xl animate-[fadeInUp_0.6s_ease-out]">
+                <div className="p-6 lg:p-8 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-2xl bg-amber-500/20 backdrop-blur ring-1 ring-amber-500/30">
+                      <Database className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">采集地址配置</h3>
+                      <p className="text-sm text-white/60">配置设备的数据采集地址和参数</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 lg:p-8">
+                  <AddressConfig
+                    value={formData.addresses}
+                    onChange={handleAddressesChange}
+                    disabled={loading}
+                    plcType={formData.plc_type}
+                  />
+                </div>
+              </div>
+            </TabsContent>
           </div>
         </Tabs>
 
-        <DialogFooter className="border-t p-6 flex-shrink-0">
-          <div className="flex justify-end">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  resetForm()
-                  onCancel()
-                }}
-                disabled={loading}
-              >
-                取消
-              </Button>
-              <Button
-                type="button"
-                disabled={loading}
-                onClick={handleSubmit}
-              >
-                {loading ? '保存中...' : (isEditMode ? '更新设备' : '创建设备')}
-              </Button>
-            </div>
+        <DialogFooter className="border-t border-white/10 p-6 flex-shrink-0 animate-[fadeInUp_0.6s_ease-out]">
+          <div className="flex justify-end w-full gap-4">
+            <Button
+              type="button"
+              onClick={() => {
+                resetForm()
+                onCancel()
+              }}
+              disabled={loading}
+              className="glass-btn font-semibold"
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={loading}
+              onClick={handleSubmit}
+              className="glass-btn-primary font-semibold"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  保存中...
+                </div>
+              ) : (
+                isEditMode ? '更新设备' : '创建设备'
+              )}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
