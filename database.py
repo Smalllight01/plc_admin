@@ -120,7 +120,7 @@ class DatabaseManager:
             db.close()
     
     def write_plc_data(self, device_id: int, device_name: str, address: str, value: float,
-                       timestamp=None, metadata=None):
+                       station_id: int = 1, timestamp=None, metadata=None):
         """写入PLC数据到InfluxDB
 
         Args:
@@ -128,6 +128,7 @@ class DatabaseManager:
             device_name: 设备名称
             address: 地址
             value: 数值
+            station_id: 站号，默认为1
             timestamp: 时间戳，如果为None则使用当前时间
             metadata: 额外的元数据字典
 
@@ -139,27 +140,29 @@ class DatabaseManager:
             return False
 
         try:
+            # 使用传入的分离的站号参数，不再从metadata中获取
+
             # 构建存储信息用于日志记录
             storage_info = {
                 'device_id': device_id,
                 'device_name': device_name,
-                'address': address,
+                'address': address,        # 直接使用传入的地址（已经是分离的）
+                'station_id': station_id,  # 从元数据或默认值获取
                 'value': value
             }
 
-            # 基础Point配置（确保所有数值字段都是float类型）
+            # 基础Point配置（使用分离的地址和站号）
             point = Point("plc_data") \
                 .tag("device_id", str(device_id)) \
                 .tag("device_name", device_name) \
                 .tag("address", address) \
+                .tag("station_id", str(station_id)) \
                 .field("value", float(value))
 
             # 添加元数据作为tags和fields
             if metadata:
                 # 添加tags（用于查询和分组，存储字符串和枚举类型的数据）
-                if 'stationId' in metadata:
-                    point = point.tag("station_id", str(metadata['stationId']))
-                    storage_info['station_id'] = metadata['stationId']
+                # 注意：station_id 已经在主tags中处理，这里不再重复处理
                 if 'registerType' in metadata:
                     point = point.tag("register_type", metadata['registerType'])
                     storage_info['register_type'] = metadata['registerType']
@@ -291,11 +294,16 @@ class DatabaseManager:
             if response_time is not None:
                 metadata['responseTime'] = response_time
 
+            # 使用分离的地址和站号字段
+            address = address_config.get('address', '')
+            station_id = address_config.get('stationId', 1)
+
             # 使用增强的写入方法
             return self.write_plc_data(
                 device_id=device_id,
                 device_name=device_name,
-                address=address_config.get('address', ''),
+                address=address,
+                station_id=station_id,
                 value=scaled_value,
                 timestamp=timestamp,
                 metadata=metadata
@@ -340,9 +348,13 @@ class DatabaseManager:
                 timestamp = data_point.get('timestamp', current_time)
                 metadata = data_point.get('metadata', {})
 
+                # 使用分离的地址和站号字段
+                station_id = metadata.get('stationId', 1)
+
                 # 收集地址信息用于日志
                 address_info = {
                     'address': address,
+                    'station_id': station_id,
                     'value': value
                 }
 
@@ -365,12 +377,11 @@ class DatabaseManager:
                     .tag("device_id", str(device_id)) \
                     .tag("device_name", device_name) \
                     .tag("address", address) \
+                    .tag("station_id", str(station_id)) \
                     .field("value", float(value))
 
-                # 添加元数据
+                # 添加元数据（station_id已经在上面设置）
                 if metadata:
-                    if 'stationId' in metadata:
-                        point = point.tag("station_id", str(metadata['stationId']))
                     if 'registerType' in metadata:
                         point = point.tag("register_type", metadata['registerType'])
                     if 'functionCode' in metadata:
@@ -441,30 +452,42 @@ class DatabaseManager:
             logger.error(f"批量写入InfluxDB失败: {e}")
             return False
     
-    def write_communication_error(self, device_id: int, device_name: str, error_message: str, timestamp=None):
+    def write_communication_error(self, device_id: int, device_name: str, error_message: str,
+                                 error_type: str = "connection_failed", severity: str = "high",
+                                 address: str = None, station_id: int = None, timestamp=None):
         """写入通信异常数据到InfluxDB
-        
+
         Args:
             device_id: 设备ID
             device_name: 设备名称
             error_message: 错误信息
+            error_type: 错误类型 (connection_failed, read_failed, parse_failed, network_error)
+            severity: 严重程度 (high, medium, low)
+            address: 相关地址（可选）
+            station_id: 站号（可选）
             timestamp: 时间戳，如果为None则使用当前时间
-        
+
         Returns:
             bool: 写入是否成功
         """
         if not self.influx_write_api:
             logger.warning("InfluxDB未初始化，无法写入通信异常数据")
             return False
-        
+
         try:
             point = Point("communication_errors") \
                 .tag("device_id", str(device_id)) \
                 .tag("device_name", device_name) \
-                .tag("error_type", "connection_failed") \
+                .tag("error_type", error_type) \
                 .field("error_message", error_message) \
-                .field("severity", "high")
-            
+                .field("severity", severity)
+
+            # 添加可选字段
+            if address:
+                point = point.tag("address", address)
+            if station_id is not None:
+                point = point.tag("station_id", str(station_id))
+
             # 设置时间戳为上海时区
             if timestamp:
                 # 如果传入的时间戳没有时区信息，假设为本地时间并转换为上海时区
@@ -481,16 +504,16 @@ class DatabaseManager:
                 shanghai_tz = pytz.timezone('Asia/Shanghai')
                 current_time = datetime.now(shanghai_tz)
                 point = point.time(current_time)
-            
+
             self.influx_write_api.write(
                 bucket=config.INFLUXDB_BUCKET,
                 org=config.INFLUXDB_ORG,
                 record=point
             )
-            logger.info(f"通信异常已记录到InfluxDB: 设备{device_name}({device_id}) - {error_message}")
+            logger.info(f"异常已记录到InfluxDB: 设备{device_name}({device_id}) - {error_type}: {error_message}")
             return True
         except Exception as e:
-            logger.error(f"写入通信异常到InfluxDB失败: {e}")
+            logger.error(f"写入异常到InfluxDB失败: {e}")
             return False
     
     def query_plc_data(self, device_id: int = None, start_time: str = "-1h", stop_time: str = "now()"):
@@ -528,20 +551,129 @@ class DatabaseManager:
             logger.error(f"查询InfluxDB失败: {e}")
             return []
     
-    def query_latest_data(self, device_id: int, limit: int = 1):
-        """查询设备最新数据
-        
+    def query_latest_data_by_device_config(self, device_id: int, limit: int = 100):
+        """根据设备配置查询最新数据
         Args:
             device_id: 设备ID
             limit: 限制返回数量
-            
+        Returns:
+            list: 最新数据列表，按设备配置的地址返回
+        """
+        if not self.influx_query_api:
+            logger.warning("InfluxDB未初始化，无法查询数据")
+            return []
+
+        # 获取设备地址配置
+        try:
+            with self.get_db() as db:
+                device = db.query(Device).filter(Device.id == device_id).first()
+                if not device:
+                    logger.warning(f"设备 {device_id} 不存在")
+                    return []
+
+                # 获取地址配置
+                address_configs = device.get_address_configs()
+                if not address_configs:
+                    logger.info(f"设备 {device_id} 没有配置地址")
+                    return []
+
+                
+                # 构建查询条件
+                address_filters = []
+                for addr_config in address_configs:
+                    address = addr_config.get('address', '')
+                    station_id = addr_config.get('stationId', 1)
+                    address_filters.append(f'r.address == "{address}" and r.station_id == "{station_id}"')
+
+                if not address_filters:
+                    return []
+
+                # 构建查询
+                address_condition = ' or '.join(address_filters)
+                query = f'''
+                from(bucket: "{config.INFLUXDB_BUCKET}")
+                |> range(start: -5m)
+                |> filter(fn: (r) => r._measurement == "plc_data")
+                |> filter(fn: (r) => r.device_id == "{device_id}")
+                |> filter(fn: (r) => r._field == "value")
+                |> filter(fn: (r) => {address_condition})
+                |> group(columns: ["address", "station_id"])
+                |> last()
+                |> limit(n: {limit})
+                '''
+
+                result = self.influx_query_api.query(org=config.INFLUXDB_ORG, query=query)
+
+                data = []
+                shanghai_tz = pytz.timezone('Asia/Shanghai')
+                current_time = datetime.now(shanghai_tz)
+
+                for table in result:
+                    for record in table.records:
+                        # 检查数据时间有效性（最近3分钟内的数据才认为是有效的实时数据）
+                        time_utc = record.get_time()
+                        time_shanghai = time_utc.astimezone(shanghai_tz) if time_utc else None
+
+                        if time_shanghai:
+                            time_diff = current_time - time_shanghai
+                            if time_diff.total_seconds() > 180:  # 超过3分钟的数据不返回
+                                continue
+
+                        base_address = record.values.get('address', '')
+                        station_id = record.values.get('station_id', '1')
+
+                        data.append({
+                            'time': time_shanghai,
+                            'device_id': record.values.get('device_id'),
+                            'device_name': record.values.get('device_name'),
+                            'address': base_address,
+                            'station_id': int(station_id),
+                            'value': record.get_value()
+                        })
+
+                # 按设备配置的顺序排序数据
+                ordered_data = []
+                for addr_config in address_configs:
+                    address = addr_config.get('address', '')
+                    station_id = addr_config.get('stationId', 1)
+
+                    # 查找对应的数据
+                    matching_data = next(
+                        (item for item in data
+                         if item['address'] == address and item['station_id'] == station_id),
+                        None
+                    )
+
+                    if matching_data:
+                        # 添加配置信息
+                        matching_data.update({
+                            'name': addr_config.get('name', ''),
+                            'type': addr_config.get('type', 'int16'),
+                            'unit': addr_config.get('unit', ''),
+                            'description': addr_config.get('description', '')
+                        })
+                        ordered_data.append(matching_data)
+
+                return ordered_data
+
+        except Exception as e:
+            logger.error(f"根据设备配置查询最新数据失败: {e}")
+            return []
+
+    def query_latest_data(self, device_id: int, limit: int = 1):
+        """查询设备最新数据
+
+        Args:
+            device_id: 设备ID
+            limit: 限制返回数量
+
         Returns:
             list: 最新数据列表，如果数据过期或设备离线则返回空列表
         """
         if not self.influx_query_api:
             logger.warning("InfluxDB未初始化，无法查询数据")
             return []
-        
+
         # 检查设备状态
         try:
             with self.get_db() as db:
@@ -552,7 +684,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"检查设备状态失败: {e}")
             return []
-        
+
         try:
             # 缩短查询时间范围到5分钟，确保数据的实时性
             # 只查询主value字段，避免类型冲突
@@ -562,49 +694,169 @@ class DatabaseManager:
             |> filter(fn: (r) => r._measurement == "plc_data")
             |> filter(fn: (r) => r.device_id == "{device_id}")
             |> filter(fn: (r) => r._field == "value")
-            |> group(columns: ["address"])
+            |> group(columns: ["address", "station_id"])
             |> last()
             |> limit(n: {limit * 100})
             '''
-            
+
             result = self.influx_query_api.query(org=config.INFLUXDB_ORG, query=query)
-            
+
             data = []
             shanghai_tz = pytz.timezone('Asia/Shanghai')
             current_time = datetime.now(shanghai_tz)
-            
+
             for table in result:
                 for record in table.records:
                     # 将时间转换为上海时区
                     time_utc = record.get_time()
                     time_shanghai = time_utc.astimezone(shanghai_tz) if time_utc else None
-                    
+
                     # 检查数据时间有效性（最近3分钟内的数据才认为是有效的实时数据）
                     if time_shanghai:
                         time_diff = current_time - time_shanghai
                         if time_diff.total_seconds() > 180:  # 超过3分钟的数据不返回
                             logger.debug(f"数据过期，跳过: 设备{device_id}, 时间差{time_diff.total_seconds()}秒")
                             continue
-                    
+
+                    # 直接使用分离的地址和站号
+                    base_address = record.values.get('address', '')
+                    station_id = record.values.get('station_id', '1')
+
                     data.append({
                         'time': time_shanghai,
                         'device_id': record.values.get('device_id'),
                         'device_name': record.values.get('device_name'),
-                        'address': record.values.get('address'),
+                        'address': base_address,      # 直接使用分离的地址
+                        'station_id': int(station_id), # 直接使用分离的站号
                         'value': record.get_value()
                     })
-            
+
             return data
         except Exception as e:
             logger.error(f"查询最新数据失败: {e}")
             return []
     
+    def query_history_data_by_device_config(self, device_id: int, start_time: datetime, end_time: datetime,
+                                          address: str = None, station_id: int = None, limit: int = 1000, offset: int = 0):
+        """根据设备配置查询历史数据
+        Args:
+            device_id: 设备ID
+            start_time: 开始时间
+            end_time: 结束时间
+            address: 地址过滤（可选）
+            station_id: 站号过滤（可选）
+            limit: 限制返回数量
+            offset: 数据偏移量
+        Returns:
+            list: 历史数据列表
+        """
+        if not self.influx_query_api:
+            logger.warning("InfluxDB未初始化，无法查询数据")
+            return []
+
+        try:
+            # 获取设备地址配置
+            with self.get_db() as db:
+                device = db.query(Device).filter(Device.id == device_id).first()
+                if not device:
+                    logger.warning(f"设备 {device_id} 不存在")
+                    return []
+
+                # 获取地址配置
+                address_configs = device.get_address_configs()
+                if not address_configs:
+                    logger.info(f"设备 {device_id} 没有配置地址")
+                    return []
+
+                
+                # 过滤地址配置
+                if address:
+                    if station_id is not None:
+                        # 过滤特定地址和站号
+                        address_configs = [addr_config for addr_config in address_configs
+                                        if addr_config.get('address') == address and addr_config.get('stationId', 1) == station_id]
+                    else:
+                        # 过滤特定地址（所有站号）
+                        address_configs = [addr_config for addr_config in address_configs
+                                        if addr_config.get('address') == address]
+
+                
+                if not address_configs:
+                    return []
+
+                # 确保时间为上海时区
+                shanghai_tz = pytz.timezone('Asia/Shanghai')
+                if start_time.tzinfo is None:
+                    start_time = shanghai_tz.localize(start_time)
+                else:
+                    start_time = start_time.astimezone(shanghai_tz)
+                if end_time.tzinfo is None:
+                    end_time = shanghai_tz.localize(end_time)
+                else:
+                    end_time = end_time.astimezone(shanghai_tz)
+
+                # 转换为UTC时间用于查询
+                start_time_utc = start_time.astimezone(pytz.UTC)
+                end_time_utc = end_time.astimezone(pytz.UTC)
+
+                # 构建查询条件
+                address_filters = []
+                for addr_config in address_configs:
+                    addr = addr_config.get('address', '')
+                    sid = addr_config.get('stationId', 1)
+                    address_filters.append(f'r.address == "{addr}" and r.station_id == {sid}')
+
+                address_condition = ' or '.join(address_filters)
+
+                query = f'''
+                from(bucket: "{config.INFLUXDB_BUCKET}")
+                |> range(start: {start_time_utc.isoformat()}, stop: {end_time_utc.isoformat()})
+                |> filter(fn: (r) => r._measurement == "plc_data")
+                |> filter(fn: (r) => r.device_id == "{device_id}")
+                |> filter(fn: (r) => r._field == "value")
+                |> filter(fn: (r) => {address_condition})
+                |> sort(columns: ["_time"])
+                '''
+
+                # 添加分页
+                if offset > 0:
+                    query += f'|> limit(n: {limit + offset}) |> tail(n: {limit})'
+                else:
+                    query += f'|> limit(n: {limit})'
+
+                result = self.influx_query_api.query(org=config.INFLUXDB_ORG, query=query)
+
+                data = []
+                for table in result:
+                    for record in table.records:
+                        # 将时间转换为上海时区
+                        time_utc = record.get_time()
+                        time_shanghai = time_utc.astimezone(shanghai_tz) if time_utc else None
+
+                        base_address = record.values.get('address', '')
+                        station_id_from_record = record.values.get('station_id', '1')
+
+                        data.append({
+                            'time': time_shanghai,
+                            'device_id': record.values.get('device_id'),
+                            'device_name': record.values.get('device_name'),
+                            'address': base_address,
+                            'station_id': int(station_id_from_record),
+                            'value': record.get_value()
+                        })
+
+                return data
+
+        except Exception as e:
+            logger.error(f"根据设备配置查询历史数据失败: {e}")
+            return []
+
     def query_history_data(self, device_id: int, start_time: datetime, end_time: datetime, address: str = None, limit: int = 1000, offset: int = 0):
         """查询历史数据"""
         if not self.influx_query_api:
             logger.warning("InfluxDB未初始化，无法查询数据")
             return []
-        
+
         try:
             # 确保时间为上海时区
             shanghai_tz = pytz.timezone('Asia/Shanghai')
@@ -612,16 +864,16 @@ class DatabaseManager:
                 start_time = shanghai_tz.localize(start_time)
             else:
                 start_time = start_time.astimezone(shanghai_tz)
-            
+
             if end_time.tzinfo is None:
                 end_time = shanghai_tz.localize(end_time)
             else:
                 end_time = end_time.astimezone(shanghai_tz)
-            
+
             # 转换为UTC时间用于查询
             start_time_utc = start_time.astimezone(pytz.UTC)
             end_time_utc = end_time.astimezone(pytz.UTC)
-            
+
             query = f'''
             from(bucket: "{config.INFLUXDB_BUCKET}")
             |> range(start: {start_time_utc.isoformat()}, stop: {end_time_utc.isoformat()})
@@ -629,36 +881,52 @@ class DatabaseManager:
             |> filter(fn: (r) => r.device_id == "{device_id}")
             |> filter(fn: (r) => r._field == "value")
             '''
-            
+
             if address:
-                query += f'|> filter(fn: (r) => r.address == "{address}")'
-            
+                # 支持新的查询方式：前端可以传入address和station_id参数
+                # 为了兼容，假设前端可能传入 "address_s1" 格式或分离的查询参数
+                if '_s' in address and address.rsplit('_s', 1)[-1].isdigit():
+                    # 解析 "address_s1" 格式
+                    parts = address.rsplit('_s', 1)
+                    if len(parts) == 2:
+                        base_addr = parts[0]
+                        station_id = parts[1]
+                        query += f'|> filter(fn: (r) => r.address == "{base_addr}" and r.station_id == "{station_id}")'
+                else:
+                    # 直接使用地址过滤（可能是普通地址或已经分离的地址）
+                    query += f'|> filter(fn: (r) => r.address == "{address}")'
+
             # 添加排序以确保分页的一致性
             query += '|> sort(columns: ["_time"])'
-            
+
             # 添加偏移和限制
             if offset > 0:
                 query += f'|> limit(n: {limit + offset}) |> tail(n: {limit})'
             else:
                 query += f'|> limit(n: {limit})'
-            
+
             result = self.influx_query_api.query(org=config.INFLUXDB_ORG, query=query)
-            
+
             data = []
             for table in result:
                 for record in table.records:
                     # 将时间转换为上海时区
                     time_utc = record.get_time()
                     time_shanghai = time_utc.astimezone(shanghai_tz) if time_utc else None
-                    
+
+                    # 直接使用分离的地址和站号
+                    base_address = record.values.get('address', '')
+                    station_id = record.values.get('station_id', '1')
+
                     data.append({
                         'time': time_shanghai,
                         'device_id': record.values.get('device_id'),
                         'device_name': record.values.get('device_name'),
-                        'address': record.values.get('address'),
+                        'address': base_address,      # 直接使用分离的地址
+                        'station_id': int(station_id), # 直接使用分离的站号
                         'value': record.get_value()
                     })
-            
+
             return data
         except Exception as e:
             logger.error(f"查询历史数据失败: {e}")

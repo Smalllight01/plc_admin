@@ -76,6 +76,125 @@ class OmronProtocolHandler(BaseProtocolHandler):
             self.last_error = str(e)
             return False
 
+    def _set_timeouts(self, connect_timeout: int = 3000, receive_timeout: int = 2000):
+        """统一的超时设置方法"""
+        if hasattr(self.plc, 'ConnectTimeOut'):
+            self.plc.ConnectTimeOut = connect_timeout
+        if hasattr(self.plc, 'ReceiveTimeOut'):
+            self.plc.ReceiveTimeOut = receive_timeout
+
+    def _read_with_retry(self, address: str, data_type: str, config: dict, original_addr: str):
+        """智能重试读取机制"""
+        max_retries = 2  # 最大重试次数
+        retry_delay = 0.1  # 重试延迟（秒）
+
+        for attempt in range(max_retries + 1):
+            try:
+                read_result = self._perform_read(address, data_type, config)
+                if read_result and read_result.IsSuccess:
+                    return read_result
+
+                # 如果是第一次失败且是网络相关错误，进行重试
+                if attempt < max_retries:
+                    import time
+                    time.sleep(retry_delay * (attempt + 1))  # 递增延迟
+
+            except Exception as e:
+                if attempt < max_retries:
+                    import time
+                    time.sleep(retry_delay * (attempt + 1))
+                    continue
+                else:
+                    logger.error(f"读取地址{original_addr}时发生异常 {self.device.name}: {e}")
+                    break
+
+        return None
+
+    def _perform_read(self, address: str, data_type: str, config: dict):
+        """执行具体的读取操作"""
+        if data_type == 'bool':
+            return self.plc.ReadBool(address)
+        elif data_type == 'int16':
+            return self.plc.ReadInt16(address)
+        elif data_type == 'uint16':
+            return self.plc.ReadUInt16(address)
+        elif data_type == 'int32':
+            return self.plc.ReadInt32(address)
+        elif data_type == 'uint32':
+            return self.plc.ReadUInt32(address)
+        elif data_type == 'float':
+            return self.plc.ReadFloat(address)
+        elif data_type == 'string':
+            string_length = config.get('stringLength', 10)
+            return self.plc.ReadString(address, string_length)
+        else:
+            # 默认使用Int16
+            return self.plc.ReadInt16(address)
+
+    def _parse_read_result(self, read_result, data_type: str, addr: str) -> Optional[float]:
+        """解析读取结果"""
+        try:
+            if data_type == 'bool':
+                return float(1 if read_result.Content else 0)
+            elif data_type == 'string':
+                # 字符串转换为数值
+                try:
+                    return float(read_result.Content)
+                except (ValueError, TypeError):
+                    logger.warning(f"字符串值无法转换为数值 {self.device.name}: {addr} = {read_result.Content}")
+                    return None
+            else:
+                return float(read_result.Content)
+        except Exception as e:
+            logger.error(f"解析读取结果失败 {self.device.name}: {addr} = {e}")
+            return None
+
+    def _handle_read_error(self, read_result, addr: str, data_type: str):
+        """处理读取错误并记录到InfluxDB"""
+        error_msg = read_result.Message.lower() if read_result and read_result.Message else ""
+        network_errors = [
+            'timeout', 'connection', 'network', 'socket',
+            'unreachable', 'refused', 'reset', 'closed'
+        ]
+
+        is_network_error = any(err in error_msg for err in network_errors)
+
+        # 构建错误信息
+        full_error_msg = read_result.Message if read_result else "未知错误"
+        error_context = f"地址{addr}, 类型{data_type}"
+
+        if is_network_error:
+            logger.error(f"欧姆龙PLC网络通信失败 {self.device.name} ({error_context}): {full_error_msg}")
+            # 存储网络错误到InfluxDB
+            try:
+                from database import db_manager
+                db_manager.write_communication_error(
+                    device_id=self.device.id,
+                    device_name=self.device.name,
+                    error_message=full_error_msg,
+                    error_type="network_error",
+                    severity="high",
+                    address=addr
+                )
+            except Exception as e:
+                logger.error(f"存储网络错误到InfluxDB失败 {self.device.name}: {e}")
+        else:
+            # 非网络错误，可能是地址错误或权限问题
+            logger.warning(f"欧姆龙PLC数据读取失败但PLC在线 {self.device.name} ({error_context}): {full_error_msg}")
+            # 存储读取错误到InfluxDB
+            try:
+                from database import db_manager
+                db_manager.write_communication_error(
+                    device_id=self.device.id,
+                    device_name=self.device.name,
+                    error_message=full_error_msg,
+                    error_type="read_failed",
+                    severity="medium",
+                    address=addr
+                )
+            except Exception as e:
+                logger.error(f"存储读取错误到InfluxDB失败 {self.device.name}: {e}")
+
     def read_addresses(self, addresses: List[str], address_configs: Optional[List[dict]] = None) -> tuple[Dict[str, Optional[float]], bool]:
         """批量读取欧姆龙PLC地址数据"""
         if not self.plc:
@@ -99,74 +218,19 @@ class OmronProtocolHandler(BaseProtocolHandler):
                 try:
                     config = address_configs[i] if i < len(address_configs) else {}
                     data_type = config.get('type', 'int16')
-                    read_result = None
-                    value = None
 
-                    # 根据数据类型选择读取方法
-                    if data_type == 'bool':
-                        read_result = self.plc.ReadBool(addr)
-                        if read_result.IsSuccess:
-                            value = float(1 if read_result.Content else 0)
-                    elif data_type == 'int16':
-                        read_result = self.plc.ReadInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'uint16':
-                        read_result = self.plc.ReadUInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'int32':
-                        read_result = self.plc.ReadInt32(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'uint32':
-                        read_result = self.plc.ReadUInt32(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'float':
-                        read_result = self.plc.ReadFloat(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'string':
-                        # 字符串读取需要长度参数，默认使用10
-                        string_length = config.get('stringLength', 10)
-                        read_result = self.plc.ReadString(addr, string_length)
-                        if read_result.IsSuccess:
-                            # 字符串转换为数值，这里可能需要特殊处理
-                            try:
-                                value = float(read_result.Content)
-                            except (ValueError, TypeError):
-                                # 如果不能转换为数值，记录日志并设为None
-                                logger.warning(f"字符串值无法转换为数值 {self.device.name}: {addr} = {read_result.Content}")
-                                value = None
-                    else:
-                        # 默认使用Int16
-                        read_result = self.plc.ReadInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-
+                    # 使用智能重试机制读取数据
+                    read_result = self._read_with_retry(addr, data_type, config, addr)
                     if read_result and read_result.IsSuccess:
-                        all_values[addr] = value
-                        has_network_communication = True
-                        logger.debug(f"读取成功 {self.device.name}: {addr} ({data_type}) = {value}")
-                    else:
-                        # 分析错误类型
-                        error_msg = read_result.Message.lower() if read_result and read_result.Message else ""
-                        network_errors = [
-                            'timeout', 'connection', 'network', 'socket',
-                            'unreachable', 'refused', 'reset', 'closed'
-                        ]
-
-                        is_network_error = any(err in error_msg for err in network_errors)
-
-                        if is_network_error:
-                            logger.error(f"欧姆龙PLC网络通信失败 {self.device.name}: {read_result.Message if read_result else '未知错误'}")
-                            all_values[addr] = None
-                        else:
-                            # 非网络错误，可能是地址错误或权限问题
+                        # 解析读取结果
+                        value = self._parse_read_result(read_result, data_type, addr)
+                        if value is not None:
+                            all_values[addr] = value
                             has_network_communication = True
-                            logger.warning(f"欧姆龙PLC数据读取失败但PLC在线 {self.device.name} (地址{addr}, 类型{data_type}): {read_result.Message if read_result else '未知错误'}")
-                            all_values[addr] = None
+                            logger.debug(f"读取成功 {self.device.name}: {addr} ({data_type}) = {value}")
+                    else:
+                        # 读取失败，分析错误类型
+                        self._handle_read_error(read_result, addr, data_type)
 
                 except Exception as e:
                     logger.error(f"读取地址{addr}时发生异常 {self.device.name}: {e}")

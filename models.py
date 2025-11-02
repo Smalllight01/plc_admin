@@ -155,6 +155,7 @@ class Device(Base):
                             'byteOrder': addr.get('byteOrder', 'CDAB'),
                             'wordSwap': addr.get('wordSwap', False),
                             'scanRate': addr.get('scanRate', 1000),
+                            'scale': addr.get('scale', 1.0),  # 简单缩放倍数
                             'scaling': addr.get('scaling', {
                                 'enabled': False,
                                 'inputMin': 0,
@@ -179,6 +180,7 @@ class Device(Base):
                             'byteOrder': 'CDAB',
                             'wordSwap': False,
                             'scanRate': 1000,
+                            'scale': 1.0,  # 简单缩放倍数
                             'scaling': {
                                 'enabled': False,
                                 'inputMin': 0,
@@ -209,6 +211,7 @@ class Device(Base):
                             'byteOrder': 'CDAB',
                             'wordSwap': False,
                             'scanRate': 1000,
+                            'scale': 1.0,  # 简单缩放倍数
                             'scaling': {
                                 'enabled': False,
                                 'inputMin': 0,

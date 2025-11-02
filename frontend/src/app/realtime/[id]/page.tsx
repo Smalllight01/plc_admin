@@ -199,12 +199,26 @@ export default function DeviceDetailPage() {
       if (deviceData && deviceData.data) {
         setPreviousData(currentData)
         
-        // 将数组格式转换为对象格式
+        // 简化数据处理，后端直接返回正确格式
         const dataMap: Record<string, any> = {}
         if (Array.isArray(deviceData.data)) {
           deviceData.data.forEach((item: any) => {
             if (item.address) {
-              dataMap[item.address] = item.value
+              // 使用唯一的地址标识符（后端已经按配置顺序返回）
+              const stationId = item.station_id || 1
+              const uniqueKey = `${item.address}_s${stationId}`
+              const displayAddress = stationId > 1 ? `${item.address}(站${stationId})` : item.address
+
+              dataMap[uniqueKey] = {
+                value: item.value,
+                displayAddress: displayAddress,
+                originalAddress: item.address, // 添加原始地址字段
+                address: uniqueKey, // 使用唯一key作为address
+                stationId: stationId,
+                name: item.name || '',
+                type: item.type || 'int16',
+                unit: item.unit || ''
+              }
             }
           })
         } else {
@@ -228,27 +242,47 @@ export default function DeviceDetailPage() {
     }
   }, [realtimeData, deviceId])
 
-  // 处理地址数据，合并配置和实时数据
+  // 简化的地址处理逻辑 - 直接使用设备配置和后端数据
   const processedAddresses = useMemo(() => {
+    if (!device?.addresses) return []
+
+    // 解析设备地址配置
     let addresses: any[] = []
-    if (device?.addresses) {
-      if (Array.isArray(device.addresses)) {
-        addresses = device.addresses
-      } else if (typeof device.addresses === 'string') {
-        try {
-          addresses = JSON.parse(device.addresses)
-        } catch (error) {
-          console.error('Failed to parse device addresses:', error)
-          addresses = []
-        }
+    if (Array.isArray(device.addresses)) {
+      addresses = device.addresses
+    } else if (typeof device.addresses === 'string') {
+      try {
+        addresses = JSON.parse(device.addresses)
+      } catch (error) {
+        console.error('Failed to parse device addresses:', error)
+        addresses = []
       }
     }
-    return addresses.map((addr: any) => ({
-      ...addr,
-      currentValue: currentData[addr.address],
-      previousValue: previousData[addr.address],
-      hasData: currentData[addr.address] !== undefined
-    }))
+
+    // 直接映射地址配置和实时数据，不再自动扩展
+    return addresses.map((addr: any) => {
+      const baseAddress = typeof addr === 'string' ? addr : addr.address
+      const stationId = typeof addr === 'string' ? 1 : (addr.stationId || 1)
+      const storageKey = `${baseAddress}_s${stationId}`
+
+      // 从后端返回的数据中获取值
+      const currentDataItem = currentData[storageKey]
+      const previousDataItem = previousData[storageKey]
+
+      return {
+        address: storageKey,
+        baseAddress: baseAddress,
+        originalAddress: baseAddress, // 添加原始地址字段
+        stationId: stationId,
+        name: typeof addr === 'string' ? '' : (addr.name || ''),
+        type: typeof addr === 'string' ? 'int16' : (addr.type || 'int16'),
+        unit: typeof addr === 'string' ? '' : (addr.unit || ''),
+        currentValue: currentDataItem?.value,
+        previousValue: previousDataItem?.value,
+        hasData: currentDataItem !== undefined,
+        displayAddress: currentDataItem?.displayAddress || (stationId > 1 ? `${baseAddress}(站${stationId})` : baseAddress)
+      }
+    })
   }, [device?.addresses, currentData, previousData])
 
   // 获取所有唯一的数据类型
@@ -715,6 +749,7 @@ export default function DeviceDetailPage() {
                             />
                           </TableHead>
                           <TableHead>地址</TableHead>
+                          {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && <TableHead>站号</TableHead>}
                           <TableHead>名称</TableHead>
                           <TableHead>当前值</TableHead>
                           <TableHead>类型</TableHead>
@@ -732,7 +767,10 @@ export default function DeviceDetailPage() {
                                 onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
                               />
                             </TableCell>
-                            <TableCell className="font-mono text-sm">{addr.address}</TableCell>
+                            <TableCell className="font-mono text-sm">{addr.originalAddress || addr.address}</TableCell>
+                            {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
+                              <TableCell className="text-sm">{addr.stationId || 1}</TableCell>
+                            )}
                             <TableCell className="font-medium">{addr.name || '-'}</TableCell>
                             <TableCell>
                               <DataValueDisplay value={addr.currentValue} type={addr.type} />
@@ -774,9 +812,14 @@ export default function DeviceDetailPage() {
                               </div>
                               <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
                             </div>
-                            <CardTitle className="text-sm font-mono">{addr.address}</CardTitle>
+                            <CardTitle className="text-sm font-mono">{addr.originalAddress || addr.address}</CardTitle>
                             {addr.name && (
                               <CardDescription className="text-sm font-medium">{addr.name}</CardDescription>
+                            )}
+                            {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
+                              <CardDescription className="text-xs">
+                                站号: {addr.stationId || 1}
+                              </CardDescription>
                             )}
                           </CardHeader>
                           <CardContent className="space-y-2">
@@ -826,6 +869,11 @@ export default function DeviceDetailPage() {
                               {addr.name && (
                                 <div className="font-medium text-sm truncate" title={addr.name}>
                                   {addr.name}
+                                </div>
+                              )}
+                              {device?.plc_type === 'modbus_rtu_over_tcp' && (
+                                <div className="text-xs text-muted-foreground">
+                                  站号: {addr.stationId || 1}
                                 </div>
                               )}
                               <div className="flex items-center justify-between">

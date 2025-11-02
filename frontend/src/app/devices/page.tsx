@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -13,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import {
   Card,
   CardContent,
@@ -45,16 +43,7 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { apiService } from '@/services/api'
 import { Device, Group, CreateDeviceRequest, UpdateDeviceRequest } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
-
-/**
- * 字节顺序选项
- */
-const BYTE_ORDER_OPTIONS = [
-  { value: 'ABCD', label: 'ABCD (标准)' },
-  { value: 'BADC', label: 'BADC' },
-  { value: 'CDAB', label: 'CDAB (常用)' },
-  { value: 'DCBA', label: 'DCBA' },
-]
+import { DeviceForm } from '@/components/device/device-form'
 
 import {
   Plus,
@@ -65,23 +54,17 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
-  Settings,
   Activity,
   AlertTriangle,
   Server,
   Network,
-  Eye,
-  Filter,
-  Target,
   Database,
   Zap,
-  Shield,
   Clock,
   CheckCircle,
   XCircle,
   Loader,
 } from 'lucide-react'
-import { AddressConfig, type AddressConfig as AddressConfigType } from '@/components/device/address-config'
 
 /**
  * 设备管理页面组件
@@ -94,19 +77,6 @@ export default function DevicesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingDevice, setEditingDevice] = useState<Device | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    plc_type: 'modbus_tcp',
-    protocol: 'TCP',
-    ip_address: '',
-    port: 502,
-    addresses: [] as AddressConfigType[],
-    group_id: 1,
-    is_active: true,
-    description: '',
-    stationId: 1,
-    byteOrder: 'CDAB', // 字节顺序配置
-  })
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -149,17 +119,21 @@ export default function DevicesPage() {
    * 创建设备
    */
   const createDeviceMutation = useMutation({
-    mutationFn: (data: CreateDeviceRequest) => apiService.createDevice(data),
-    onSuccess: () => {
+    mutationFn: (data: CreateDeviceRequest) => {
+      console.log('createDevice mutation 被调用，数据:', data)
+      return apiService.createDevice(data)
+    },
+    onSuccess: (result) => {
+      console.log('设备创建成功，结果:', result)
       toast({
         title: '成功',
         description: '设备创建成功',
       })
       setShowCreateDialog(false)
-      resetForm()
       queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
     onError: (error: any) => {
+      console.error('设备创建失败，错误:', error)
       toast({
         title: '错误',
         description: error.response?.data?.detail || '创建设备失败',
@@ -181,7 +155,6 @@ export default function DevicesPage() {
       })
       setShowEditDialog(false)
       setEditingDevice(null)
-      resetForm()
       queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
     onError: (error: any) => {
@@ -222,63 +195,10 @@ export default function DevicesPage() {
   }
 
   /**
-   * 重置表单
-   */
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      plc_type: 'modbus_tcp',
-      protocol: 'TCP',
-      ip_address: '',
-      port: 502,
-      addresses: [],
-      group_id: 1,
-      is_active: true,
-      description: '',
-      stationId: 1,
-      byteOrder: 'CDAB',
-    })
-  }
-
-  /**
    * 处理编辑设备
    */
   const handleEditDevice = (device: Device) => {
     setEditingDevice(device)
-
-    // 解析地址数据
-    const parsedAddresses = (() => {
-      if (!device.addresses) return []
-      if (Array.isArray(device.addresses)) return device.addresses
-      if (typeof device.addresses === 'string') {
-        try {
-          return JSON.parse(device.addresses)
-        } catch (error) {
-          console.error('Failed to parse device addresses:', error)
-          return []
-        }
-      }
-      return []
-    })()
-
-    // 提取站号（从第一个地址获取，或默认1）
-    const stationId = parsedAddresses.length > 0 ? (parsedAddresses[0] as any)?.stationId || 1 : 1
-    // 使用设备级别的字节顺序配置
-    const byteOrder = device.byte_order || 'CDAB'
-
-    setFormData({
-      name: device.name,
-      plc_type: device.plc_type,
-      protocol: device.protocol,
-      ip_address: device.ip_address,
-      port: device.port,
-      addresses: parsedAddresses,
-      group_id: device.group_id !== null ? device.group_id : 1,
-      is_active: device.is_active,
-      description: device.description || '',
-      stationId,
-      byteOrder,
-    })
     setShowEditDialog(true)
   }
 
@@ -291,47 +211,7 @@ export default function DevicesPage() {
     }
   }
 
-  /**
-   * 处理表单提交
-   */
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // 处理地址数据 - 对于Modbus设备，应用统一的字节顺序
-    let processedAddresses = formData.addresses
-    if (isModbusDevice(formData.plc_type)) {
-      processedAddresses = formData.addresses.map((addr: any) => ({
-        ...addr,
-        byteOrder: formData.byteOrder
-      }))
-    }
-
-    // 对于ModbusTCP，应用统一的站号
-    if (formData.plc_type === 'modbus_tcp' && formData.stationId) {
-      processedAddresses = processedAddresses.map((addr: any) => ({
-        ...addr,
-        stationId: formData.stationId
-      }))
-    }
-
-    if (editingDevice) {
-      updateDeviceMutation.mutate({
-        id: editingDevice.id,
-        data: {
-          ...formData,
-          addresses: JSON.stringify(processedAddresses),
-          byte_order: formData.byteOrder,
-        },
-      })
-    } else {
-      createDeviceMutation.mutate({
-        ...formData,
-        addresses: JSON.stringify(processedAddresses),
-        byte_order: formData.byteOrder,
-      })
-    }
-  }
-
+  
   /**
    * 获取设备状态显示
    */
@@ -425,7 +305,6 @@ export default function DevicesPage() {
               </div>
               <Button
                 onClick={() => {
-                  resetForm()
                   setShowCreateDialog(true)
                 }}
                 variant="outline"
@@ -572,7 +451,6 @@ export default function DevicesPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      resetForm()
                       setShowCreateDialog(true)
                     }}
                   >
@@ -676,215 +554,55 @@ export default function DevicesPage() {
               setShowCreateDialog(false)
               setShowEditDialog(false)
               setEditingDevice(null)
-              resetForm()
             }
           }}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader className="pb-4">
-                <DialogTitle className="text-lg font-semibold">
-                  {editingDevice ? '编辑设备' : '添加设备'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingDevice ? '修改设备配置信息' : '创建新的PLC设备配置'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">设备名称 *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="输入设备名称"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="plc_type">PLC类型 *</Label>
-                    <Select
-                      value={formData.plc_type}
-                      onValueChange={(value) => setFormData({ ...formData, plc_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="modbus_tcp">Modbus TCP</SelectItem>
-                        <SelectItem value="modbus_rtu_over_tcp">Modbus RTU over TCP</SelectItem>
-                        <SelectItem value="siemens_s7">Siemens S7</SelectItem>
-                        <SelectItem value="omron_fins">Omron Fins</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="protocol">通信协议 *</Label>
-                    <Select
-                      value={formData.protocol}
-                      onValueChange={(value) => setFormData({ ...formData, protocol: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TCP">TCP</SelectItem>
-                        <SelectItem value="UDP">UDP</SelectItem>
-                        <SelectItem value="Serial">Serial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="ip_address">IP地址 *</Label>
-                    <Input
-                      id="ip_address"
-                      value={formData.ip_address}
-                      onChange={(e) => setFormData({ ...formData, ip_address: e.target.value })}
-                      placeholder="192.168.1.100"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="port">端口号 *</Label>
-                    <Input
-                      id="port"
-                      type="number"
-                      value={formData.port}
-                      onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 502 })}
-                      placeholder="502"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="group_id">设备分组 *</Label>
-                    <Select
-                      value={formData.group_id.toString()}
-                      onValueChange={(value) => setFormData({ ...formData, group_id: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups.map((group: any) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* 字节顺序配置 - 针对整个IP设备 */}
-                <div className="space-y-2">
-                  <Label htmlFor="byteOrder">字节顺序 *</Label>
-                  <Select
-                    value={formData.byteOrder || 'CDAB'}
-                    onValueChange={(value: string) => setFormData({ ...formData, byteOrder: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BYTE_ORDER_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500">字节顺序是针对整个IP设备的配置，所有地址共享此设置</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">设备描述</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="输入设备描述信息"
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  />
-                  <Label htmlFor="is_active" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    启用设备
-                  </Label>
-                </div>
-                
-                {/* ModbusTCP站号配置 - 在地址配置上方 */}
-                {formData.plc_type === 'modbus_tcp' && (
-                  <div className="space-y-4 border-b pb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="station_id" className="text-base font-medium">ModbusTCP站号配置</Label>
-                      <Input
-                        id="station_id"
-                        type="number"
-                        min="1"
-                        max="247"
-                        value={formData.stationId || 1}
-                        onChange={(e) => setFormData({ ...formData, stationId: parseInt(e.target.value) || 1 })}
-                        placeholder="1"
-                        required
-                        className="max-w-xs"
-                      />
-                      <p className="text-sm text-gray-500">ModbusTCP设备使用单个站号，所有地址共享此站号</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 地址配置 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    <Label className="text-base font-medium">
-                      地址配置
-                    </Label>
-                  </div>
-                  <AddressConfig
-                    value={formData.addresses}
-                    onChange={(addresses) => setFormData({ ...formData, addresses })}
-                    plcType={formData.plc_type}
-                  />
-                </div>
-                
-                <DialogFooter className="pt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowCreateDialog(false)
-                      setShowEditDialog(false)
-                      setEditingDevice(null)
-                      resetForm()
-                    }}
-                  >
-                    取消
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createDeviceMutation.isPending || updateDeviceMutation.isPending}
-                  >
-                    {(createDeviceMutation.isPending || updateDeviceMutation.isPending) && (
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    )}
-                    {editingDevice ? '更新设备' : '创建设备'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
+            <DeviceForm
+              device={editingDevice || undefined}
+              groups={groups}
+              onSubmit={(data) => {
+                console.log('设备页面 onSubmit 被调用，数据:', data)
+                if (editingDevice) {
+                  console.log('更新设备模式，设备ID:', editingDevice.id)
+                  const updateData: UpdateDeviceRequest = {
+                    name: data.name || '',
+                    plc_type: data.plc_type || 'modbus_tcp',
+                    protocol: data.protocol || 'tcp',
+                    ip_address: data.ip_address || '',
+                    port: data.port || 502,
+                    addresses: JSON.stringify(data.addresses),
+                    group_id: data.group_id || 1,
+                    is_active: data.is_active ?? true,
+                    description: data.description || '',
+                  }
+                  console.log('调用更新设备API，数据:', updateData)
+                  updateDeviceMutation.mutate({
+                    id: editingDevice.id,
+                    data: updateData,
+                  })
+                } else {
+                  console.log('创建设备模式')
+                  const createData: CreateDeviceRequest = {
+                    name: data.name || '',
+                    plc_type: data.plc_type || 'modbus_tcp',
+                    protocol: data.protocol || 'tcp',
+                    ip_address: data.ip_address || '',
+                    port: data.port || 502,
+                    addresses: JSON.stringify(data.addresses),
+                    group_id: data.group_id || 1,
+                    is_active: data.is_active ?? true,
+                    description: data.description || '',
+                  }
+                  console.log('调用创建设备API，数据:', createData)
+                  createDeviceMutation.mutate(createData)
+                }
+              }}
+              onCancel={() => {
+                setShowCreateDialog(false)
+                setShowEditDialog(false)
+                setEditingDevice(null)
+              }}
+              loading={createDeviceMutation.isPending || updateDeviceMutation.isPending}
+            />
           </Dialog>
         </div>
       </MainLayout>

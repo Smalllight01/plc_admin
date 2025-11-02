@@ -25,6 +25,7 @@ from api.data_routes import router as data_router
 from api.settings_routes import router as settings_router
 from api.dashboard_routes import router as dashboard_router
 from api.performance_routes import router as performance_router
+from api.connection_routes import router as connection_router
 import logging
 import os
 from datetime import datetime
@@ -99,6 +100,7 @@ def create_app(plc_collector=None):
     app.include_router(settings_router)
     app.include_router(dashboard_router)
     app.include_router(performance_router)
+    app.include_router(connection_router)
 
     return app
 

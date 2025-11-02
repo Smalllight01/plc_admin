@@ -232,6 +232,7 @@ export interface HistoryData {
   device_id: number
   address: string
   value: any
+  originalAddress?: string // 原始存储格式地址（如 100_s1）
 }
 
 // 统计数据类型

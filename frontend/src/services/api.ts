@@ -273,6 +273,7 @@ export const deviceService = {
    * @returns 创建的设备
    */
   async createDevice(data: CreateDeviceRequest): Promise<Device> {
+    console.log('deviceService.createDevice 被调用，原始数据:', data)
     // 转换前端字段名到后端期望的字段名
     const backendData = {
       name: data.name,
@@ -285,7 +286,9 @@ export const deviceService = {
       description: data.description || '',
       is_active: data.is_active !== undefined ? data.is_active : true
     }
+    console.log('发送到后端的数据:', backendData)
     const response = await apiClient.post<ApiResponse<Device>>('/api/devices', backendData)
+    console.log('API响应:', response.data)
     return response.data.data!
   },
 

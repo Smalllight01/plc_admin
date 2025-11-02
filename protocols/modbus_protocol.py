@@ -46,9 +46,13 @@ class ModbusProtocolHandler(BaseProtocolHandler):
             plc_type_lower = self.device.plc_type.lower()
 
             if 'tcp' in plc_type_lower and 'rtu' in plc_type_lower:
-                # Modbus RTU over TCP
+                # Modbus RTU over TCP - 串口透传网口情况
                 self.plc = ModbusRtuOverTcp()
                 logger.info(f"创建Modbus RTU over TCP客户端: {self.device.name}")
+
+                # RTU over TCP特殊配置
+                self._configure_rtu_over_tcp()
+
             elif 'rtu' in plc_type_lower:
                 # Modbus RTU (串口)
                 self.plc = ModbusRtu()
@@ -111,6 +115,185 @@ class ModbusProtocolHandler(BaseProtocolHandler):
             self.last_error = str(e)
             return False
 
+    def _configure_rtu_over_tcp(self):
+        """配置Modbus RTU over TCP的特殊参数"""
+        try:
+            # 增加超时时间（RTU over TCP可能需要更长的处理时间）
+            self._set_timeouts(connect_timeout=5000, receive_timeout=3000)
+            logger.info(f"Modbus RTU over TCP特殊配置完成: {self.device.name}")
+        except Exception as e:
+            logger.warning(f"配置RTU over TCP特殊参数失败 {self.device.name}: {e}")
+
+    def _set_timeouts(self, connect_timeout: int = 3000, receive_timeout: int = 2000):
+        """统一的超时设置方法"""
+        if hasattr(self.plc, 'ConnectTimeOut'):
+            self.plc.ConnectTimeOut = connect_timeout
+        if hasattr(self.plc, 'ReceiveTimeOut'):
+            self.plc.ReceiveTimeOut = receive_timeout
+
+    def _is_rtu_over_tcp(self) -> bool:
+        """检查是否为RTU over TCP协议"""
+        if not self.device or not self.device.plc_type:
+            return False
+        plc_type_lower = self.device.plc_type.lower()
+        return 'tcp' in plc_type_lower and 'rtu' in plc_type_lower
+
+    def _format_address(self, address: str, station_id: int) -> str:
+        """格式化地址，根据协议类型返回正确的格式"""
+        if self._is_rtu_over_tcp():
+            return f"s={station_id};{address}"
+        return address
+
+    def _create_storage_key(self, address: str, station_id: int) -> str:
+        """创建存储用的key，确保不同站号的相同地址不会冲突"""
+        if self._is_rtu_over_tcp():
+            return f"{address}_s{station_id}"
+        return address
+
+    def _read_with_retry(self, formatted_addr: str, data_type: str, config: dict, original_addr: str):
+        """智能重试读取机制"""
+        max_retries = 2  # 最大重试次数
+        retry_delay = 0.1  # 重试延迟（秒）
+
+        for attempt in range(max_retries + 1):
+            try:
+                read_result = self._perform_read(formatted_addr, data_type, config)
+                if read_result and read_result.IsSuccess:
+                    return read_result
+
+                # 如果是第一次失败且是网络相关错误，进行重试
+                if attempt < max_retries:
+                    import time
+                    time.sleep(retry_delay * (attempt + 1))  # 递增延迟
+
+            except Exception as e:
+                if attempt < max_retries:
+                    import time
+                    time.sleep(retry_delay * (attempt + 1))
+                    continue
+                else:
+                    logger.error(f"读取地址{original_addr}时发生异常 {self.device.name}: {e}")
+                    break
+
+        return None
+
+    def _perform_read(self, formatted_addr: str, data_type: str, config: dict):
+        """执行具体的读取操作"""
+        if data_type == 'bool':
+            return self.plc.ReadBool(formatted_addr)
+        elif data_type == 'int16':
+            return self.plc.ReadInt16(formatted_addr)
+        elif data_type == 'uint16':
+            return self.plc.ReadUInt16(formatted_addr)
+        elif data_type == 'int32':
+            return self.plc.ReadInt32(formatted_addr)
+        elif data_type == 'uint32':
+            return self.plc.ReadUInt32(formatted_addr)
+        elif data_type == 'float':
+            return self.plc.ReadFloat(formatted_addr)
+        elif data_type == 'string':
+            string_length = config.get('stringLength', 10)
+            return self.plc.ReadString(formatted_addr, string_length)
+        else:
+            # 默认使用Int16
+            return self.plc.ReadInt16(formatted_addr)
+
+    def _parse_read_result(self, read_result, data_type: str, addr: str) -> Optional[float]:
+        """解析读取结果"""
+        try:
+            if data_type == 'bool':
+                return float(1 if read_result.Content else 0)
+            elif data_type == 'string':
+                # 字符串转换为数值
+                try:
+                    return float(read_result.Content)
+                except (ValueError, TypeError):
+                    error_msg = f"字符串值无法转换为数值: {read_result.Content}"
+                    logger.warning(f"{self.device.name}: {addr} - {error_msg}")
+                    # 存储解析错误到InfluxDB
+                    try:
+                        from database import db_manager
+                        db_manager.write_communication_error(
+                            device_id=self.device.id,
+                            device_name=self.device.name,
+                            error_message=error_msg,
+                            error_type="parse_failed",
+                            severity="low",
+                            address=addr,
+                            station_id=getattr(self, 'station_id', 1)
+                        )
+                    except Exception as e:
+                        logger.error(f"存储解析错误到InfluxDB失败 {self.device.name}: {e}")
+                    return None
+            else:
+                return float(read_result.Content)
+        except Exception as e:
+            error_msg = f"解析读取结果异常: {str(e)}"
+            logger.error(f"{self.device.name}: {addr} - {error_msg}")
+            # 存储解析错误到InfluxDB
+            try:
+                from database import db_manager
+                db_manager.write_communication_error(
+                    device_id=self.device.id,
+                    device_name=self.device.name,
+                    error_message=error_msg,
+                    error_type="parse_failed",
+                    severity="medium",
+                    address=addr,
+                    station_id=getattr(self, 'station_id', 1)
+                )
+            except Exception as e:
+                logger.error(f"存储解析错误到InfluxDB失败 {self.device.name}: {e}")
+            return None
+
+    def _handle_read_error(self, read_result, addr: str, data_type: str, station_id: int):
+        """处理读取错误并记录到InfluxDB"""
+        error_msg = read_result.Message.lower() if read_result and read_result.Message else ""
+        network_errors = [
+            'timeout', 'connection', 'network', 'socket',
+            'unreachable', 'refused', 'reset', 'closed'
+        ]
+
+        is_network_error = any(err in error_msg for err in network_errors)
+
+        # 构建错误信息
+        full_error_msg = read_result.Message if read_result else "未知错误"
+        error_context = f"站号{station_id}, 地址{addr}, 类型{data_type}"
+
+        if is_network_error:
+            logger.error(f"Modbus网络通信失败 {self.device.name} ({error_context}): {full_error_msg}")
+            # 存储网络错误到InfluxDB
+            try:
+                from database import db_manager
+                db_manager.write_communication_error(
+                    device_id=self.device.id,
+                    device_name=self.device.name,
+                    error_message=full_error_msg,
+                    error_type="network_error",
+                    severity="high",
+                    address=addr,
+                    station_id=station_id
+                )
+            except Exception as e:
+                logger.error(f"存储网络错误到InfluxDB失败 {self.device.name}: {e}")
+        else:
+            # 非网络错误，可能是地址错误或权限问题
+            logger.warning(f"Modbus数据读取失败但PLC在线 {self.device.name} ({error_context}): {full_error_msg}")
+            # 存储读取错误到InfluxDB
+            try:
+                from database import db_manager
+                db_manager.write_communication_error(
+                    device_id=self.device.id,
+                    device_name=self.device.name,
+                    error_message=full_error_msg,
+                    error_type="read_failed",
+                    severity="medium",
+                    address=addr,
+                    station_id=station_id
+                )
+            except Exception as e:
+                logger.error(f"存储读取错误到InfluxDB失败 {self.device.name}: {e}")
+
     
     def read_addresses(self, addresses: List[str], address_configs: Optional[List[dict]] = None) -> tuple[Dict[str, Optional[float]], bool]:
         """批量读取Modbus地址数据"""
@@ -147,78 +330,36 @@ class ModbusProtocolHandler(BaseProtocolHandler):
 
                     # 检查当前地址是否有独立的站号配置
                     address_station_id = config.get('stationId', self.station_id)
-                    if self.plc.Station != address_station_id:
-                        self.plc.Station = address_station_id
-                        logger.debug(f"切换到站号 {address_station_id} 读取地址 {addr}: {self.device.name}")
-                        # 对于485总线，站号切换后需要短暂延迟
+
+                    # 格式化地址和添加必要的延迟
+                    formatted_addr = self._format_address(addr, address_station_id)
+
+                    # RTU over TCP需要在设备间添加延迟（485半双工特性）
+                    if self._is_rtu_over_tcp() and i > 0:
                         import time
-                        time.sleep(0.02)  # 20ms延迟，确保站号切换完成
+                        time.sleep(0.02)  # 20ms延迟，确保485总线稳定
+                    elif not self._is_rtu_over_tcp():
+                        # 其他协议切换PLC站号
+                        if self.plc.Station != address_station_id:
+                            self.plc.Station = address_station_id
+                            logger.debug(f"切换到站号 {address_station_id} 读取地址 {addr}: {self.device.name}")
+                            import time
+                            time.sleep(0.02)  # 20ms延迟，确保站号切换完成
 
-                    # 根据数据类型选择读取方法
-                    if data_type == 'bool':
-                        read_result = self.plc.ReadBool(addr)
-                        if read_result.IsSuccess:
-                            value = float(1 if read_result.Content else 0)
-                    elif data_type == 'int16':
-                        read_result = self.plc.ReadInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'uint16':
-                        read_result = self.plc.ReadUInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'int32':
-                        read_result = self.plc.ReadInt32(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'uint32':
-                        read_result = self.plc.ReadUInt32(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'float':
-                        read_result = self.plc.ReadFloat(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-                    elif data_type == 'string':
-                        # 字符串读取需要长度参数，默认使用10
-                        string_length = config.get('stringLength', 10)
-                        read_result = self.plc.ReadString(addr, string_length)
-                        if read_result.IsSuccess:
-                            # 字符串转换为数值，这里可能需要特殊处理
-                            try:
-                                value = float(read_result.Content)
-                            except (ValueError, TypeError):
-                                # 如果不能转换为数值，记录日志并设为None
-                                logger.warning(f"字符串值无法转换为数值 {self.device.name}: {addr} = {read_result.Content}")
-                                value = None
-                    else:
-                        # 默认使用Int16
-                        read_result = self.plc.ReadInt16(addr)
-                        if read_result.IsSuccess:
-                            value = float(read_result.Content)
-
+                    # 使用智能重试机制读取数据
+                    read_result = self._read_with_retry(formatted_addr, data_type, config, addr)
                     if read_result and read_result.IsSuccess:
-                        all_values[addr] = value
-                        has_network_communication = True
-                        logger.debug(f"读取成功 {self.device.name}: {addr} ({data_type}) = {value}")
-                    else:
-                        # 分析错误类型
-                        error_msg = read_result.Message.lower() if read_result and read_result.Message else ""
-                        network_errors = [
-                            'timeout', 'connection', 'network', 'socket',
-                            'unreachable', 'refused', 'reset', 'closed'
-                        ]
-
-                        is_network_error = any(err in error_msg for err in network_errors)
-
-                        if is_network_error:
-                            logger.error(f"Modbus网络通信失败 {self.device.name} (站号{self.station_id}): {read_result.Message if read_result else '未知错误'}")
-                            all_values[addr] = None
-                        else:
-                            # 非网络错误，可能是地址错误或权限问题
+                        # 解析读取结果
+                        value = self._parse_read_result(read_result, data_type, addr)
+                        if value is not None:
+                            # 创建存储key，确保不同站号的相同地址不会冲突
+                            storage_key = self._create_storage_key(addr, address_station_id)
+                            all_values[storage_key] = value
                             has_network_communication = True
-                            logger.warning(f"Modbus数据读取失败但PLC在线 {self.device.name} (站号{self.station_id}, 地址{addr}, 类型{data_type}): {read_result.Message if read_result else '未知错误'}")
-                            all_values[addr] = None
+                            logger.debug(f"读取成功 {self.device.name}: {formatted_addr} ({data_type}) = {value}")
+                    else:
+                        # 读取失败，分析错误类型
+                        self._handle_read_error(read_result, addr, data_type, address_station_id)
 
                 except Exception as e:
                     logger.error(f"读取地址{addr}时发生异常 {self.device.name}: {e}")
@@ -429,10 +570,7 @@ class ModbusProtocolHandler(BaseProtocolHandler):
     def update_timeouts(self, connect_timeout: int, receive_timeout: int):
         """更新Modbus PLC连接和接收超时配置"""
         try:
-            if hasattr(self.plc, 'ConnectTimeOut'):
-                self.plc.ConnectTimeOut = connect_timeout
-            if hasattr(self.plc, 'ReceiveTimeOut'):
-                self.plc.ReceiveTimeOut = receive_timeout
+            self._set_timeouts(connect_timeout, receive_timeout)
             logger.info(f"更新Modbus PLC超时配置 {self.device.name}: 连接超时={connect_timeout}ms, 接收超时={receive_timeout}ms")
         except Exception as e:
             logger.error(f"更新Modbus PLC超时配置失败 {self.device.name}: {e}")

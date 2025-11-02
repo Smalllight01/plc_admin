@@ -49,6 +49,7 @@ export interface AddressConfig {
   unit?: string
   description?: string
   stationId?: number        // Modbus站号（仅用于ModbusRTUOverTCP）
+  scale?: number            // 缩放倍数（用于数值缩放）
 }
 
 /**
@@ -147,7 +148,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
     unit: '',
     description: '',
     stationId: 1,
+    scale: 1.0,
   })
+  const [scaleInputValue, setScaleInputValue] = useState('1.0') // 单独管理输入框显示值
   const [showAddForm, setShowAddForm] = useState(false)
   const { toast } = useToast()
 
@@ -184,11 +187,20 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       return
     }
 
-    // 检查地址是否重复
-    if (addresses.some(addr => addr.address === newAddress.address)) {
+    // 检查地址是否重复（考虑站号）
+    const isDuplicate = addresses.some(addr => {
+      // 对于Modbus RTU over TCP，需要同时检查地址和站号
+      if (plcType === 'modbus_rtu_over_tcp') {
+        return addr.address === newAddress.address && addr.stationId === newAddress.stationId
+      }
+      // 对于其他协议，只检查地址
+      return addr.address === newAddress.address
+    })
+
+    if (isDuplicate) {
       toast({
         title: '验证失败',
-        description: '地址已存在',
+        description: plcType === 'modbus_rtu_over_tcp' ? '相同地址和站号的配置已存在' : '地址已存在',
         variant: 'destructive',
       })
       return
@@ -202,6 +214,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       unit: newAddress.unit?.trim() === 'none' ? undefined : (newAddress.unit?.trim() || undefined),
       description: newAddress.description?.trim() || undefined,
       stationId: newAddress.stationId || 1,
+      scale: parseFloat(scaleInputValue) || 1.0, // 直接使用输入框的值
     }
 
     const newAddresses = [...addresses, address]
@@ -220,7 +233,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       unit: '',
       description: '',
       stationId: 1,
+      scale: 1.0,
     })
+    setScaleInputValue('1.0') // 重置输入框显示值
     setShowAddForm(false)
 
     toast({
@@ -267,11 +282,23 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
       return
     }
 
-    // 检查地址是否与其他地址重复
-    if (addresses.some(addr => addr.id !== id && addr.address === updatedAddress.address)) {
+    
+    // 检查地址是否与其他地址重复（考虑站号）
+    const isDuplicate = addresses.some(addr => {
+      if (addr.id === id) return false // 跳过当前编辑的地址
+
+      // 对于Modbus RTU over TCP，需要同时检查地址和站号
+      if (plcType === 'modbus_rtu_over_tcp') {
+        return addr.address === updatedAddress.address && addr.stationId === updatedAddress.stationId
+      }
+      // 对于其他协议，只检查地址
+      return addr.address === updatedAddress.address
+    })
+
+    if (isDuplicate) {
       toast({
         title: '验证失败',
-        description: '地址已存在',
+        description: plcType === 'modbus_rtu_over_tcp' ? '相同地址和站号的配置已存在' : '地址已存在',
         variant: 'destructive',
       })
       return
@@ -405,64 +432,62 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
   const addressExamples = getAddressExamples(plcType)
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">采集地址配置</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleImport}
-              disabled={disabled}
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              导入
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={addresses.length === 0}
-            >
-              <Download className="h-4 w-4 mr-1" />
-              导出
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setShowAddForm(true)}
-              disabled={disabled}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              添加地址
-            </Button>
-          </div>
+    <div className="space-y-4">
+      {/* 标题和操作按钮 */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-medium">采集地址配置</h3>
+        <div className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleImport}
+            disabled={disabled}
+          >
+            <Upload className="h-4 w-4 mr-1" />
+            导入
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={addresses.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            导出
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowAddForm(true)}
+            disabled={disabled}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            添加地址
+          </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {/* 地址示例提示 */}
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-900 mb-2">
-            {plcType} 地址格式示例：
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-            {Object.entries(addressExamples).map(([key, value]) => (
-              <div key={key} className="font-mono">{value}</div>
-            ))}
-          </div>
+      </div>
+        {/* 地址格式示例 */}
+      <div className="p-3 bg-blue-50 rounded-lg">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">
+          {plcType} 地址格式示例：
+        </h4>
+        <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
+          {Object.entries(addressExamples).map(([key, value]) => (
+            <div key={key} className="font-mono">{value}</div>
+          ))}
         </div>
+      </div>
 
         {/* 添加地址表单 */}
-        {showAddForm && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-base">添加新地址</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+      {showAddForm && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-base">添加新地址</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="grid gap-2">
                   <Label>地址名称 *</Label>
                   <Input
@@ -529,7 +554,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2 col-span-2">
+                <div className="grid gap-2">
                   <Label>描述</Label>
                   <Input
                     value={newAddress.description || ''}
@@ -537,8 +562,54 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                     placeholder="地址描述信息（可选）"
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label>缩放倍数</Label>
+                  <Input
+                    type="text"
+                    step="0.01"
+                    value={scaleInputValue}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // 允许空值、数字、小数点和负号
+                      if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                        setScaleInputValue(value) // 更新显示值
+                        // 同时更新实际值
+                        if (value === '') {
+                          setNewAddress(prev => ({ ...prev, scale: 1.0 }))
+                        } else {
+                          const parsedValue = parseFloat(value)
+                          setNewAddress(prev => ({ ...prev, scale: parsedValue }))
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // 失去焦点时确保有有效的数字
+                      const value = e.target.value
+                      if (value === '') {
+                        // 如果为空，设置为默认值
+                        const finalValue = '1.0'
+                        setScaleInputValue(finalValue)
+                        setNewAddress(prev => ({ ...prev, scale: 1.0 }))
+                      } else if (!/^-?\d*\.?\d+$/.test(value)) {
+                        // 如果格式无效，设置为默认值
+                        const finalValue = '1.0'
+                        setScaleInputValue(finalValue)
+                        setNewAddress(prev => ({ ...prev, scale: 1.0 }))
+                      } else {
+                        // 格式有效，保存数值
+                        const parsedValue = parseFloat(value)
+                        setScaleInputValue(String(parsedValue))
+                        setNewAddress(prev => ({ ...prev, scale: parsedValue }))
+                      }
+                    }}
+                    placeholder="1.0"
+                  />
+                  <div className="text-xs text-gray-500">
+                    用于缩放设备返回值，如0.1表示设备值除以10
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-end space-x-2 mt-4">
+              <div className="flex justify-end space-x-2 mt-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -551,7 +622,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                       unit: '',
                       description: '',
                       stationId: 1,
+                      scale: 1.0,
                     })
+                    setScaleInputValue('1.0')
                   }}
                 >
                   取消
@@ -560,9 +633,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                   添加
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
         {/* 地址列表 */}
         {addresses.length === 0 ? (
@@ -579,8 +652,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
             </Button>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
               <TableRow>
                 <TableHead>名称</TableHead>
                 <TableHead>地址</TableHead>
@@ -588,6 +662,7 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                 <TableHead>类型</TableHead>
                 <TableHead>单位</TableHead>
                 <TableHead>描述</TableHead>
+                <TableHead>缩放倍数</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -598,7 +673,9 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
                   address={address}
                   isEditing={editingId === address.id}
                   onEdit={() => handleEdit(address)}
-                  onSave={(updatedAddress) => handleSave(address.id, updatedAddress)}
+                  onSave={(updatedAddress) => {
+      handleSave(address.id, updatedAddress)
+    }}
                   onCancel={handleCancel}
                   onDelete={() => handleDelete(address.id)}
                   onCopy={() => handleCopy(address)}
@@ -608,16 +685,16 @@ export function AddressConfig({ value, onChange, disabled = false, plcType = 'Mo
               ))}
             </TableBody>
           </Table>
-        )}
-
-        {/* 统计信息 */}
-        {addresses.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500">
-            共 {addresses.length} 个采集地址
           </div>
-        )}
-      </CardContent>
-    </Card>
+    )}
+
+      {/* 统计信息 */}
+      {addresses.length > 0 && (
+        <div className="mt-4 text-sm text-gray-500">
+          共 {addresses.length} 个采集地址
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -651,13 +728,17 @@ function AddressRow({
   plcType,
 }: AddressRowProps) {
   const [editData, setEditData] = useState<Partial<AddressConfig>>(address)
+  const [editScaleInputValue, setEditScaleInputValue] = useState(String(address.scale ?? 1.0)) // 编辑时的独立显示值
 
   useEffect(() => {
     if (isEditing) {
-      setEditData({
+      const newEditData = {
         ...address,
-        unit: address.unit || 'none'
-      })
+        unit: address.unit || 'none',
+        scale: address.scale ?? 1.0
+      }
+      setEditData(newEditData)
+      setEditScaleInputValue(String(address.scale ?? 1.0)) // 设置编辑时的显示值
     }
   }, [isEditing, address])
 
@@ -668,14 +749,18 @@ function AddressRow({
           <Input
             value={editData.name || ''}
             onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-            className="h-8"
+            className="h-10 w-24"
+            placeholder="名称"
+            style={{visibility: 'visible', display: 'block'}}
           />
         </TableCell>
         <TableCell>
           <Input
             value={editData.address || ''}
             onChange={(e) => setEditData(prev => ({ ...prev, address: e.target.value }))}
-            className="h-8 font-mono"
+            className="h-10 w-24 font-mono"
+            placeholder="地址"
+            style={{visibility: 'visible', display: 'block'}}
           />
         </TableCell>
         {plcType === 'modbus_rtu_over_tcp' && (
@@ -686,7 +771,8 @@ function AddressRow({
               max="247"
               value={editData.stationId || 1}
               onChange={(e) => setEditData(prev => ({ ...prev, stationId: parseInt(e.target.value) || 1 }))}
-              className="h-8"
+              className="h-10 w-16"
+            style={{visibility: 'visible', display: 'block'}}
             />
           </TableCell>
         )}
@@ -695,7 +781,7 @@ function AddressRow({
             value={editData.type || 'float'}
             onValueChange={(value) => setEditData(prev => ({ ...prev, type: value }))}
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger className="h-10 w-24">
               <SelectValue placeholder={DATA_TYPES.find(t => t.value === (editData.type || 'float'))?.label || '选择数据类型'} />
             </SelectTrigger>
             <SelectContent>
@@ -712,7 +798,7 @@ function AddressRow({
             value={editData.unit || 'none'}
             onValueChange={(value) => setEditData(prev => ({ ...prev, unit: value }))}
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger className="h-10 w-20">
               <SelectValue placeholder={editData.unit === 'none' ? '无单位' : (editData.unit || '选择单位')} />
             </SelectTrigger>
             <SelectContent>
@@ -729,8 +815,50 @@ function AddressRow({
           <Input
             value={editData.description || ''}
             onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
-            className="h-8"
+            className="h-10 w-32"
             placeholder="描述"
+            style={{visibility: 'visible', display: 'block'}}
+          />
+        </TableCell>
+        <TableCell>
+          <Input
+            type="text"
+            step="0.01"
+            value={editScaleInputValue}
+            onChange={(e) => {
+              const value = e.target.value
+              // 允许空值、数字、小数点和负号
+              if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                setEditScaleInputValue(value) // 更新显示值
+                // 同时更新实际值
+                if (value === '') {
+                  setEditData(prev => ({ ...prev, scale: 1.0 }))
+                } else {
+                  const parsedValue = parseFloat(value)
+                  setEditData(prev => ({ ...prev, scale: parsedValue }))
+                }
+              }
+            }}
+            onBlur={(e) => {
+              // 失去焦点时确保有有效的数字
+              const value = e.target.value
+              if (value === '') {
+                const finalValue = '1.0'
+                setEditScaleInputValue(finalValue)
+                setEditData(prev => ({ ...prev, scale: 1.0 }))
+              } else if (!/^-?\d*\.?\d+$/.test(value)) {
+                const finalValue = '1.0'
+                setEditScaleInputValue(finalValue)
+                setEditData(prev => ({ ...prev, scale: 1.0 }))
+              } else {
+                const parsedValue = parseFloat(value)
+                setEditScaleInputValue(String(parsedValue))
+                setEditData(prev => ({ ...prev, scale: parsedValue }))
+              }
+            }}
+            className="h-10 w-16"
+            placeholder="1.0"
+            style={{visibility: 'visible', display: 'block'}}
           />
         </TableCell>
         <TableCell className="text-right">
@@ -780,6 +908,11 @@ function AddressRow({
         <div className="truncate" title={address.description}>
           {address.description || '-'}
         </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant={address.scale !== 1.0 ? "default" : "secondary"}>
+          {address.scale || 1.0}
+        </Badge>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end space-x-1">

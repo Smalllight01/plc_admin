@@ -81,10 +81,10 @@ def get_realtime_data(
                     continue
                 
                 try:
-                    # 从InfluxDB获取最新数据
-                    latest_data = db_manager.query_latest_data(
+                    # 从InfluxDB获取最新数据（基于设备配置）
+                    latest_data = db_manager.query_latest_data_by_device_config(
                         device_id=device.id,
-                        limit=1
+                        limit=100
                     )
                     
                     device_data = {
@@ -146,6 +146,7 @@ def get_history_data(
     start_time: Optional[str] = Query(None, description="开始时间(ISO格式)"),
     end_time: Optional[str] = Query(None, description="结束时间(ISO格式)"),
     address: Optional[str] = Query(None, description="地址过滤"),
+    station_id: Optional[int] = Query(None, description="站号过滤"),
     limit: int = Query(1000, description="数据条数限制"),
     offset: int = Query(0, description="数据偏移量"),
     current_user: User = Depends(get_current_user)
@@ -212,22 +213,31 @@ def get_history_data(
                 limit = 10000
             
             try:
-                # 从InfluxDB查询历史数据
-                history_data = db_manager.query_history_data(
+                # 构建查询地址，支持分离的地址和站号
+                query_address = address
+                if address and station_id is not None:
+                    # 如果同时提供了地址和站号，构建组合查询以兼容现有的query_history_data方法
+                    query_address = f"{address}_s{station_id}"
+
+                # 从InfluxDB查询历史数据（基于设备配置）
+                history_data = db_manager.query_history_data_by_device_config(
                     device_id=device_id,
                     start_time=start_time_dt,
                     end_time=end_time_dt,
                     address=address,
+                    station_id=station_id,
                     limit=limit,
                     offset=offset
                 )
-                
+
                 return {
                     'device_id': device_id,
                     'device_name': device.name,
                     'start_time': start_time_dt.isoformat(),
                     'end_time': end_time_dt.isoformat(),
                     'address': address,
+                    'station_id': station_id,
+                    'query_address': query_address,
                     'data_count': len(history_data),
                     'data': history_data
                 }

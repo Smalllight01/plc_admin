@@ -23,6 +23,7 @@ interface HistoryQueryParams {
   device_id?: number
   group_id?: number
   address?: string
+  station_id?: number
   start_time?: string
   end_time?: string
   limit?: number
@@ -42,7 +43,9 @@ interface ChartDataPoint {
 interface DeviceAddress {
   id?: string
   name?: string
-  address: string
+  address: string // 存储格式地址（如 100_s1）
+  originalAddress?: string // 原始地址（如 100）
+  stationId?: number // 站号
   type?: string
   unit?: string
   description?: string
@@ -169,16 +172,42 @@ export default function HistoryPage() {
         timeGroups[timeKey] = {}
       }
       
-      // 使用地址作为键，确保唯一性
-      timeGroups[timeKey][item.address] = item.value
-      addressSet.add(item.address)
-      
+      // 使用原始存储格式地址作为键，确保唯一性
+      const displayAddress = item.originalAddress || item.address
+      timeGroups[timeKey][displayAddress] = item.value
+      addressSet.add(displayAddress)
+
       // 获取设备名称和地址名称，生成组合显示名称用于映射
       const deviceName = selectedDevice?.name || '未知设备'
-      const addr = deviceAddresses.find(a => a.address === item.address)
-      const addressName = addr?.name || item.address
-      const displayName = `${deviceName} - ${addressName}`
-      newAddressMapping[item.address] = displayName
+
+      // 使用原始存储格式地址查找配置（displayAddress是存储格式，如100_s1）
+      const addr = deviceAddresses.find(a => a.address === displayAddress)
+      let addressName: string
+      let stationDisplay: string
+
+      if (addr) {
+        // 找到配置，使用配置中的名称
+        addressName = addr.name || (addr.originalAddress || displayAddress)
+        stationDisplay = addr.stationId && addr.stationId > 1 ? ` (站号${addr.stationId})` : ''
+      } else {
+        // 没找到配置，从存储格式中解析
+        if (displayAddress.includes('_s')) {
+          const parts = displayAddress.split('_s')
+          if (parts.length === 2 && parts[1].match(/^\d+$/)) {
+            addressName = parts[0]
+            stationDisplay = ` (站号${parts[1]})`
+          } else {
+            addressName = displayAddress
+            stationDisplay = ''
+          }
+        } else {
+          addressName = displayAddress
+          stationDisplay = ''
+        }
+      }
+
+      const displayName = `${deviceName} - ${addressName}${stationDisplay}`
+      newAddressMapping[displayAddress] = displayName
       
       // // 调试日志：检查地址配置
       // if (!addr) {
@@ -241,14 +270,33 @@ export default function HistoryPage() {
       setWindowStart(0)
       setAllHistoryData([])
       setHistoryData([])
-      
+
+      // 添加调试信息
+      console.log('=== 历史数据查询调试信息 ===')
+      console.log('选中设备:', selectedDevice)
+      console.log('设备地址配置:', deviceAddresses)
+      console.log('选中地址列表:', selectedAddresses)
+
       const allData: HistoryData[] = []
-      
+
       for (const address of selectedAddresses) {
+        // 解析存储格式地址，分离address和station_id
+        let queryAddress = address
+        let stationId: number | undefined
+
+        // 检查是否是多站号存储格式 (如 100_s1)
+        const stationMatch = address.match(/^(.+)_s(\d+)$/)
+        if (stationMatch) {
+          queryAddress = stationMatch[1] // 提取原始地址
+          stationId = parseInt(stationMatch[2]) // 提取站号
+        }
+
+        // 构建查询参数，使用分离的address和station_id
         const params: HistoryQueryParams = {
           device_id: selectedDevice.id,
-          address: address,
-          limit: 50000 // 获取大量数据，实际应该根据需要调整
+          address: queryAddress,
+          station_id: stationId,
+          limit: 50000
         }
 
         if (startTime) {
@@ -258,11 +306,23 @@ export default function HistoryPage() {
           params.end_time = endTime
         }
 
-        //console.log('查询参数:', params)
+        console.log(`查询地址: ${address} -> 分离后 address=${queryAddress}, station_id=${stationId}`)
+        console.log(`查询参数:`, params)
+
         const deviceData = await apiService.getHistoryData(params)
-        //console.log(`地址 ${address} 返回数据:`, deviceData.length, '条')
-        //console.log(`地址 ${address} 数据样本:`, deviceData.slice(0, 3))
-        allData.push(...deviceData)
+        console.log(`地址 ${address} 返回数据:`, deviceData.length, '条')
+
+        if (deviceData.length > 0) {
+          console.log(`地址 ${address} 数据样本:`, deviceData.slice(0, 3))
+          // 为返回的数据添加原始存储格式地址标识
+          const processedData = deviceData.map(item => ({
+            ...item,
+            originalAddress: address
+          }))
+          allData.push(...processedData)
+        } else {
+          console.log(`地址 ${address} 无数据`)
+        }
       }
       
       // 按时间排序
@@ -311,32 +371,75 @@ export default function HistoryPage() {
           ? JSON.parse(device.addresses) 
           : device.addresses
         
-        // 转换为DeviceAddress格式
-        const deviceAddressList: DeviceAddress[] = addresses.map((addr: any) => {
+        // 转换为DeviceAddress格式，并生成存储格式的地址列表
+        const deviceAddressList: DeviceAddress[] = []
+        const storageAddresses: string[] = []
+
+        addresses.forEach((addr: any) => {
           if (typeof addr === 'string') {
-            return { address: addr }
-          } else {
-            return {
-              id: addr.id,
-              name: addr.name,
-              address: addr.address,
-              type: addr.type,
-              unit: addr.unit,
-              description: addr.description
+            // 简单字符串地址，需要检查设备类型
+            if (device.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp')) {
+              // RTU over TCP设备，自动生成多站号存储格式
+              console.log(`检测到RTU over TCP设备 ${device.name}，为地址 ${addr} 自动生成多站号存储格式`)
+
+              // 生成常见的站号配置：1-4
+              const commonStationIds = [1, 2, 3, 4]
+
+              commonStationIds.forEach(stationId => {
+                const storageAddress = `${addr}_s${stationId}`
+                deviceAddressList.push({
+                  address: storageAddress,
+                  originalAddress: addr,
+                  stationId: stationId,
+                  name: `${addr} (站号${stationId})`
+                })
+                storageAddresses.push(storageAddress)
+              })
+            } else {
+              // 非RTU over TCP设备，直接使用原始地址
+              deviceAddressList.push({ address: addr })
+              storageAddresses.push(addr)
             }
+          } else {
+            // 复杂地址对象，检查是否有站号配置
+            const { stationId, ...rest } = addr
+            const station = stationId || 1
+
+            // 生成存储格式的地址
+            const storageAddress = station > 1 ? `${addr.address}_s${station}` : addr.address
+
+            deviceAddressList.push({
+              ...rest,
+              address: storageAddress, // 使用存储格式
+              originalAddress: addr.address, // 保留原始地址
+              stationId: station
+            })
+
+            storageAddresses.push(storageAddress)
           }
         })
+
+        console.log('设备地址列表（存储格式）:', storageAddresses)
         
         setDeviceAddresses(deviceAddressList)
         
-        // 更新地址映射 - 生成与processChartData一致的格式
+        // 更新地址映射 - 直接使用存储格式
         const mapping: AddressMapping = {}
         const deviceName = device.name || '未知设备'
+
         deviceAddressList.forEach(addr => {
-          const addressName = addr.name || addr.address
+          const addressName = addr.name || (addr.originalAddress || addr.address)
           const displayName = `${deviceName} - ${addressName}`
-          mapping[addr.address] = displayName
-          console.log(`地址映射: ${addr.address} -> ${displayName}`)
+
+          // 如果有站号信息，显示站号
+          if (addr.stationId && addr.stationId > 1) {
+            const stationDisplay = `${displayName} (站号${addr.stationId})`
+            mapping[addr.address] = stationDisplay  // addr.address 已经是存储格式
+            console.log(`地址映射: ${addr.address} -> ${stationDisplay}`)
+          } else {
+            mapping[addr.address] = displayName
+            console.log(`地址映射: ${addr.address} -> ${displayName}`)
+          }
         })
         setAddressMapping(mapping)
       }
@@ -472,7 +575,7 @@ export default function HistoryPage() {
       ...historyData.map(item => [
         new Date(item.time).toLocaleString(),
         item.device_id,
-        item.address,
+        item.originalAddress || item.address,
         item.value
       ].join(','))
     ].join('\n')
@@ -703,8 +806,12 @@ export default function HistoryPage() {
                                   {isSelected && <span className="block w-full h-full text-white text-xs leading-3 text-center">✓</span>}
                                 </span>
                                 <div>
-                                  <div className="font-medium">{addr.name}</div>
-                                  <div className="text-xs text-gray-500">{addr.address} • {addr.unit}</div>
+                                  <div className="font-medium">{addr.name || `地址 ${addr.originalAddress || addr.address}`}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {addr.originalAddress || addr.address}
+                                    {addr.unit && ` • ${addr.unit}`}
+                                    {addr.stationId && addr.stationId > 1 && ` • 站号${addr.stationId}`}
+                                  </div>
                                 </div>
                               </div>
                             </div>
