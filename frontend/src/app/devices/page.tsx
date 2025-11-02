@@ -288,262 +288,389 @@ export default function DevicesPage() {
   return (
     <AuthGuard requireAdmin>
       <MainLayout>
-        <div className="w-full max-w-none p-6 space-y-6">
-          {/* 页面标题 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <Activity className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">设备管理</h1>
-                    <p className="text-blue-600 mt-1 font-medium">管理和监控PLC设备</p>
-                  </div>
+        <div className="w-full max-w-none p-6 space-y-8">
+          {/* 页面标题 - 扁平拟物风格 */}
+          <div className="neumorphic-card p-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic-lg">
+                  <Activity className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-h1 gradient-text mb-2">设备管理</h1>
+                  <p className="text-body text-muted-foreground">管理和监控PLC设备</p>
                 </div>
               </div>
               <Button
                 onClick={() => {
                   setShowCreateDialog(true)
                 }}
-                variant="outline"
-                className="bg-white hover:bg-gray-50"
+                variant="default"
+                size="lg"
+                className="shadow-neumorphic hover:shadow-neumorphic-lg"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-5 w-5 mr-2" />
                 添加设备
               </Button>
             </div>
           </div>
 
-          {/* 统计信息 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Server className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">总设备数</p>
-                    <p className="text-2xl font-bold">{devices.length}</p>
+          {/* 统计信息 - 扁平拟物风格 */}
+          <div className="dashboard-grid">
+            <div className="stat-card group">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-2">
+                  <h3 className="text-h4 text-foreground">总设备数</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-neumorphic-sm">
+                      +{Math.round(devices.length * 0.1)}%
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Wifi className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">在线设备</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {devices.filter(d => d.status === 'online').length}
-                    </p>
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
+                  <Server className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+              </div>
+              <div className="stat-card-number">{devices.length}</div>
+            </div>
+
+            <div className="stat-card group">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-2">
+                  <h3 className="text-h4 text-foreground">在线设备</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption font-medium bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200 shadow-neumorphic-sm">
+                      正常
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <WifiOff className="h-5 w-5 text-red-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">离线设备</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {devices.filter(d => d.status === 'offline').length}
-                    </p>
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
+                  <Wifi className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+              </div>
+              <div className="stat-card-number text-emerald-600">
+                {devices.filter(d => d.status === 'online').length}
+              </div>
+            </div>
+
+            <div className="stat-card group">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-2">
+                  <h3 className="text-h4 text-foreground">离线设备</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption font-medium bg-red-50 text-red-700 px-3 py-1 rounded-full border border-red-200 shadow-neumorphic-sm">
+                      异常
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Activity className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">活跃设备</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {devices.filter(d => d.is_active).length}
-                    </p>
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
+                  <WifiOff className="h-6 w-6 text-red-600 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+              </div>
+              <div className="stat-card-number text-red-600">
+                {devices.filter(d => d.status === 'offline').length}
+              </div>
+            </div>
+
+            <div className="stat-card group">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-2">
+                  <h3 className="text-h4 text-foreground">活跃设备</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 shadow-neumorphic-sm">
+                      已启用
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 shadow-neumorphic group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out">
+                  <Activity className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+              </div>
+              <div className="stat-card-number text-blue-600">
+                {devices.filter(d => d.is_active).length}
+              </div>
+            </div>
           </div>
 
-          {/* 搜索和筛选 */}
-          <div className="flex flex-col lg:flex-row gap-4">
+          {/* 搜索和筛选 - 扁平拟物风格 */}
+          <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   placeholder="搜索设备名称或IP地址..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-0 bg-muted/50"
+                  className="pl-12 h-12 border-0 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300 text-body"
                 />
               </div>
             </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="状态筛选" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="online">在线</SelectItem>
-                  <SelectItem value="offline">离线</SelectItem>
-                  <SelectItem value="active">已启用</SelectItem>
-                  <SelectItem value="inactive">已禁用</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={groupFilter} onValueChange={setGroupFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="分组筛选" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部分组</SelectItem>
-                  {groups.map((group: any) => (
-                    <SelectItem key={group.id} value={group.id.toString()}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isLoading_}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1 ${isLoading_ ? 'animate-spin' : ''}`} />
-                刷新
-              </Button>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-12 min-w-36 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
+                      <SelectValue placeholder="状态筛选" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
+                      <SelectItem value="all">全部状态</SelectItem>
+                      <SelectItem value="online">在线</SelectItem>
+                      <SelectItem value="offline">离线</SelectItem>
+                      <SelectItem value="active">已启用</SelectItem>
+                      <SelectItem value="inactive">已禁用</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={groupFilter} onValueChange={setGroupFilter}>
+                    <SelectTrigger className="h-12 min-w-36 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
+                      <SelectValue placeholder="分组筛选" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
+                      <SelectItem value="all">全部分组</SelectItem>
+                      {groups.map((group: any) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => refetch()}
+                  disabled={isLoading_}
+                  className="h-12 px-6 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300 w-full sm:w-auto"
+                >
+                  <RefreshCw className={`h-5 w-5 mr-2 ${isLoading_ ? 'animate-spin' : ''}`} />
+                  刷新
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* 设备列表 */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Database className="h-5 w-5" />
-                设备列表
-                <Badge variant="secondary" className="ml-2">
-                  {filteredDevices.length}
-                </Badge>
+          {/* 设备列表 - 扁平拟物风格 */}
+          <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                  <Database className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <span className="text-h2 gradient-text">设备列表</span>
+                  <Badge variant="secondary" className="ml-3 text-body-sm">
+                    {filteredDevices.length} 台设备
+                  </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {isLoading_ ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin mr-2 text-blue-600" />
-                  <span className="text-muted-foreground">加载中...</span>
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm mb-4">
+                    <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                  </div>
+                  <span className="text-body text-muted-foreground">加载设备数据中...</span>
                 </div>
               ) : filteredDevices.length === 0 ? (
-                <div className="text-center py-8">
-                  <Monitor className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-2">暂无设备数据</p>
+                <div className="text-center py-16">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm inline-block mb-6">
+                    <Monitor className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-h3 text-foreground mb-3">暂无设备数据</h3>
+                  <p className="text-body text-muted-foreground mb-6">
+                    当前没有找到符合条件的设备，请尝试调整筛选条件或创建新设备
+                  </p>
                   <Button
-                    variant="outline"
+                    variant="default"
+                    size="lg"
                     onClick={() => {
                       setShowCreateDialog(true)
                     }}
+                    className="shadow-neumorphic hover:shadow-neumorphic-lg"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-5 w-5 mr-2" />
                     创建第一个设备
                   </Button>
                 </div>
               ) : (
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[200px]">设备信息</TableHead>
-                        <TableHead>连接配置</TableHead>
-                        <TableHead>状态</TableHead>
-                        <TableHead>分组</TableHead>
-                        <TableHead>地址数量</TableHead>
-                        <TableHead>更新时间</TableHead>
-                        <TableHead className="text-right">操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDevices.map((device) => (
-                        <TableRow key={device.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Monitor className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <div className="font-medium">{device.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {device.plc_type}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Network className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <div className="font-mono text-sm">
-                                  {device.ip_address}:{device.port}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {device.protocol}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusDisplay(device)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {device.group_id ? getGroupName(device.group_id) : '未知分组'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Zap className="h-4 w-4 text-muted-foreground" />
-                              <span>{device.addresses?.length || 0}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {formatDateTime(device.updated_at)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditDevice(device)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteDevice(device)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                <>
+                  {/* 桌面端表格视图 */}
+                  <div className="hidden lg:block rounded-2xl overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[220px] text-h4 font-semibold">设备信息</TableHead>
+                          <TableHead className="text-h4 font-semibold">连接配置</TableHead>
+                          <TableHead className="text-h4 font-semibold">状态</TableHead>
+                          <TableHead className="text-h4 font-semibold">分组</TableHead>
+                          <TableHead className="text-h4 font-semibold">地址数量</TableHead>
+                          <TableHead className="text-h4 font-semibold">更新时间</TableHead>
+                          <TableHead className="text-right text-h4 font-semibold">操作</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDevices.map((device) => (
+                          <TableRow key={device.id} className="group">
+                            <TableCell>
+                              <div className="flex items-center gap-4">
+                                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm group-hover:scale-110 transition-all duration-300">
+                                  <Monitor className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-body group-hover:text-primary transition-colors duration-300">
+                                    {device.name}
+                                  </div>
+                                  <div className="text-body-sm text-muted-foreground">
+                                    {device.plc_type}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 shadow-neumorphic-sm">
+                                  <Network className="h-4 w-4 text-green-600" />
+                                </div>
+                                <div>
+                                  <div className="font-mono text-body-sm font-medium">
+                                    {device.ip_address}:{device.port}
+                                  </div>
+                                  <div className="text-caption text-muted-foreground">
+                                    {device.protocol}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {getStatusDisplay(device)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="shadow-neumorphic-sm">
+                                {device.group_id ? getGroupName(device.group_id) : '未知分组'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-2xl bg-gradient-to-br from-yellow-50 to-amber-50 shadow-neumorphic-sm">
+                                  <Zap className="h-4 w-4 text-yellow-600" />
+                                </div>
+                                <span className="font-semibold text-body">{device.addresses?.length || 0}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm">
+                                  <Clock className="h-3.5 w-3.5" />
+                                </div>
+                                {formatDateTime(device.updated_at)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditDevice(device)}
+                                  className="h-10 w-10 p-0 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm hover:shadow-neumorphic hover:scale-110 transition-all duration-300"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteDevice(device)}
+                                  className="h-10 w-10 p-0 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 shadow-neumorphic-sm hover:shadow-neumorphic hover:scale-110 transition-all duration-300 text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* 移动端卡片视图 */}
+                  <div className="lg:hidden p-6 space-y-4">
+                    {filteredDevices.map((device) => (
+                      <Card key={device.id} className="border-0 shadow-neumorphic-sm hover:shadow-neumorphic hover:-translate-y-1 transition-all duration-300">
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                                <Monitor className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-body font-semibold">{device.name}</CardTitle>
+                                <CardDescription className="text-body-sm">{device.plc_type}</CardDescription>
+                              </div>
+                            </div>
+                            {getStatusDisplay(device)}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-body-sm text-muted-foreground font-medium">连接配置</label>
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 shadow-neumorphic-sm">
+                                  <Network className="h-3.5 w-3.5 text-green-600" />
+                                </div>
+                                <span className="font-mono text-body-sm">{device.ip_address}:{device.port}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-body-sm text-muted-foreground font-medium">分组</label>
+                              <Badge variant="outline" className="shadow-neumorphic-sm">
+                                {device.group_id ? getGroupName(device.group_id) : '未知分组'}
+                              </Badge>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-body-sm text-muted-foreground font-medium">地址数量</label>
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 shadow-neumorphic-sm">
+                                  <Zap className="h-3.5 w-3.5 text-yellow-600" />
+                                </div>
+                                <span className="font-semibold text-body">{device.addresses?.length || 0}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-body-sm text-muted-foreground font-medium">更新时间</label>
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm">
+                                  <Clock className="h-3.5 w-3.5" />
+                                </div>
+                                <span className="text-body-sm">{formatDateTime(device.updated_at)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/30">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditDevice(device)}
+                              className="h-10 w-10 p-0 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm hover:shadow-neumorphic hover:scale-110 transition-all duration-300"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteDevice(device)}
+                              className="h-10 w-10 p-0 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 shadow-neumorphic-sm hover:shadow-neumorphic hover:scale-110 transition-all duration-300 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

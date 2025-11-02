@@ -6,23 +6,23 @@ import { cn } from "@/lib/utils"
  * Badge组件的样式变体配置
  */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow-sm hover:shadow-md hover:-translate-y-0.5",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-gradient-to-r from-primary to-primary-dark text-primary-foreground hover:from-primary-light hover:to-primary",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-gradient-to-r from-secondary to-muted text-secondary-foreground hover:from-muted hover:to-secondary",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-gradient-to-r from-destructive to-red-600 text-destructive-foreground hover:from-red-500 hover:to-red-600",
+        outline: "text-foreground border-border bg-background/80 backdrop-blur-sm",
         success:
-          "border-transparent bg-green-500 text-white hover:bg-green-600",
+          "border-transparent bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-400 hover:to-green-500",
         warning:
-          "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+          "border-transparent bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500",
         info:
-          "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+          "border-transparent bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-400 hover:to-blue-500",
       },
     },
     defaultVariants: {

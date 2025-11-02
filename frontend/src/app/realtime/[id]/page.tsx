@@ -449,175 +449,195 @@ export default function DeviceDetailPage() {
   return (
     <AuthGuard>
       <MainLayout>
-        <div className="container mx-auto p-6 space-y-6">
-          {/* 页面标题 - 优化版本 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-4 mb-3">
-                  <Button variant="outline" size="sm" onClick={handleBack} className="bg-white hover:bg-gray-50">
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    返回
-                  </Button>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500 rounded-lg">
-                      <Activity className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900">{device.name}</h1>
-                      <p className="text-blue-600 mt-1 font-medium">
-                        设备详情和实时数据监控
-                      </p>
-                    </div>
+        <div className="w-full max-w-none p-6 space-y-8">
+          {/* 页面标题 - 扁平拟物风格 */}
+          <div className="neumorphic-card p-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <Button variant="outline" size="lg" onClick={handleBack} className="shadow-neumorphic-sm hover:shadow-neumorphic">
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  返回
+                </Button>
+                <div className="flex items-center gap-6">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-neumorphic-lg">
+                    <Activity className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="text-h1 gradient-text mb-2">{device.name}</h1>
+                    <p className="text-body text-muted-foreground">设备详情和实时数据监控</p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="lg"
                   onClick={handleRefresh}
                   disabled={dataLoading}
-                  className="bg-white hover:bg-gray-50"
+                  className="shadow-neumorphic-sm hover:shadow-neumorphic"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${dataLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-5 w-5 mr-2 ${dataLoading ? 'animate-spin' : ''}`} />
                   刷新数据
                 </Button>
                 <Button
                   variant={autoRefresh ? 'default' : 'outline'}
-                  size="sm"
+                  size="lg"
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={autoRefresh ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white hover:bg-gray-50'}
+                  className={autoRefresh ? 'shadow-neumorphic hover:shadow-neumorphic-lg' : 'shadow-neumorphic-sm hover:shadow-neumorphic'}
                 >
-                  <Activity className="h-4 w-4 mr-2" />
+                  <Activity className="h-5 w-5 mr-2" />
                   {autoRefresh ? '自动刷新中' : '手动模式'}
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* 设备基本信息 - 优化版本 */}
-          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <Cpu className="h-5 w-5 text-blue-500" />
-                设备信息
+          {/* 设备基本信息 - 扁平拟物风格 */}
+          <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                  <Cpu className="h-6 w-6 text-blue-600" />
+                </div>
+                <span className="text-h2 gradient-text">设备信息</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">设备名称</label>
-                  <p className="font-medium text-sm">{device.name}</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">设备名称</label>
+                  <p className="text-body font-semibold text-foreground">{device.name}</p>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">状态</label>
-                  <div className="mt-1">
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">状态</label>
+                  <div>
                     <DeviceStatusBadge status={device.status || 'unknown'} isConnected={device.is_connected} />
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">PLC型号</label>
-                  <p className="font-medium text-sm">{device.plc_type}</p>
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">PLC型号</label>
+                  <p className="text-body font-semibold text-foreground">{device.plc_type}</p>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">协议</label>
-                  <p className="font-medium text-sm">{device.protocol}</p>
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">协议</label>
+                  <p className="text-body font-semibold text-foreground">{device.protocol}</p>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">IP地址</label>
-                  <p className="font-mono text-sm">{device.ip_address}:{device.port}</p>
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">IP地址</label>
+                  <p className="font-mono text-body font-semibold text-foreground">{device.ip_address}:{device.port}</p>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">分组</label>
-                  <p className="font-medium text-sm">{device.group?.name || '未分组'}</p>
+                <div className="space-y-2">
+                  <label className="text-body-sm text-muted-foreground font-medium">分组</label>
+                  <p className="text-body font-semibold text-foreground">{device.group?.name || '未分组'}</p>
                 </div>
               </div>
-              
-              {/* 采集统计 - 内联显示 */}
-              <div className="border-t pt-3">
-                <div className="flex items-center justify-between">
+
+              {/* 采集统计 - 扁平拟物风格 */}
+              <div className="border-t border-border/30 pt-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">采集统计:</span>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                        <Database className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <span className="text-body font-semibold text-foreground">采集统计</span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span>总点数: <span className="font-bold text-blue-600">{processedAddresses.length}</span></span>
-                      <span>活跃: <span className="font-bold text-green-600">{processedAddresses.filter((addr: any) => addr.name).length}</span></span>
-                      <span>有数据: <span className="font-bold text-orange-600">{Object.keys(currentData).length}</span></span>
+                    <div className="flex items-center gap-6 text-body">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">总点数:</span>
+                        <span className="font-bold text-blue-600">{processedAddresses.length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">活跃:</span>
+                        <span className="font-bold text-green-600">{processedAddresses.filter((addr: any) => addr.name).length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">有数据:</span>
+                        <span className="font-bold text-orange-600">{Object.keys(currentData).length}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
+                  <div className="flex items-center gap-3 text-body-sm text-muted-foreground">
+                    <div className="p-1.5 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm">
+                      <Clock className="h-4 w-4" />
+                    </div>
                     <span>更新: {device.last_collect_time ? formatDateTime(device.last_collect_time) : '从未'}</span>
                   </div>
                 </div>
               </div>
-              
+
               {device.description && (
-                <div className="border-t pt-2">
-                  <label className="text-xs text-muted-foreground">描述</label>
-                  <p className="text-sm text-muted-foreground">{device.description}</p>
+                <div className="border-t border-border/30 pt-4">
+                  <label className="text-body-sm text-muted-foreground font-medium">描述</label>
+                  <p className="text-body text-muted-foreground mt-2">{device.description}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* 数据控制工具栏 - 优化版本 */}
-          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Database className="h-5 w-5 text-blue-500" />
-                  <span className="text-gray-900">实时数据</span>
-                  {dataLoading && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
-                </div>
-                <div className="flex items-center gap-2">
+          {/* 数据控制工具栏 - 扁平拟物风格 */}
+          <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
+            <CardHeader className="pb-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                    <Database className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <span className="text-h2 gradient-text">实时数据</span>
+                    {dataLoading && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+                        <span className="text-body-sm text-muted-foreground">数据更新中...</span>
+                      </div>
+                    )}
+                  </div>
+                </CardTitle>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <Button
-                      variant={showChart ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowChart(!showChart)}
-                      disabled={selectedAddresses.size === 0}
-                      className={showChart ? 'bg-blue-500 hover:bg-blue-600' : 'border-gray-200 hover:bg-gray-50'}
-                    >
-                      {showChart ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-                      {showChart ? '隐藏图表' : '显示图表'}
-                    </Button>
+                    variant={showChart ? 'default' : 'outline'}
+                    size="lg"
+                    onClick={() => setShowChart(!showChart)}
+                    disabled={selectedAddresses.size === 0}
+                    className={`w-full sm:w-auto ${showChart ? 'shadow-neumorphic hover:shadow-neumorphic-lg' : 'shadow-neumorphic-sm hover:shadow-neumorphic'}`}
+                  >
+                    {showChart ? <EyeOff className="h-5 w-5 mr-2" /> : <Eye className="h-5 w-5 mr-2" />}
+                    {showChart ? '隐藏图表' : '显示图表'}
+                  </Button>
                   <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
-                      <SelectTrigger className="w-32 border-gray-200 focus:border-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="w-full sm:w-36 h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
                       <SelectItem value="table">表格视图</SelectItem>
                       <SelectItem value="grid">网格视图</SelectItem>
                       <SelectItem value="compact">紧凑视图</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* 搜索和筛选工具 */}
-              <div className="space-y-4">
-                <div className="flex flex-col lg:flex-row gap-4">
+              <div className="space-y-6">
+                <div className="flex flex-col lg:flex-row gap-6">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <Input
                         placeholder="搜索地址、名称或类型..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="pl-12 h-12 border-0 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300 text-body"
                       />
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
                     <Select value={filterType} onValueChange={setFilterType}>
-                      <SelectTrigger className="w-32 h-11 border-gray-200 focus:border-blue-500">
+                      <SelectTrigger className="w-full sm:w-32 h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
                         <SelectValue placeholder="数据类型" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
                         <SelectItem value="all">所有类型</SelectItem>
                         {availableTypes.map((type: string) => (
                           <SelectItem key={type} value={type}>{type}</SelectItem>
@@ -625,20 +645,20 @@ export default function DeviceDetailPage() {
                       </SelectContent>
                     </Select>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-32 h-11 border-gray-200 focus:border-blue-500">
+                      <SelectTrigger className="w-full sm:w-32 h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
                         <SelectValue placeholder="数据状态" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
                         <SelectItem value="all">全部状态</SelectItem>
                         <SelectItem value="hasData">有数据</SelectItem>
                         <SelectItem value="noData">无数据</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                      <SelectTrigger className="w-32 h-11 border-gray-200 focus:border-blue-500">
+                      <SelectTrigger className="w-full sm:w-32 h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
                         <SelectItem value="address">地址</SelectItem>
                         <SelectItem value="name">名称</SelectItem>
                         <SelectItem value="value">数值</SelectItem>
@@ -647,17 +667,17 @@ export default function DeviceDetailPage() {
                     </Select>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="lg"
                       onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="h-11 px-3 border-gray-200 hover:bg-gray-50"
+                      className="h-12 px-4 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
                     >
-                      {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                      {sortOrder === 'asc' ? <SortAsc className="h-5 w-5" /> : <SortDesc className="h-5 w-5" />}
                     </Button>
                     <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
-                      <SelectTrigger className="w-24 h-11 border-gray-200 focus:border-blue-500">
+                      <SelectTrigger className="w-full sm:w-28 h-12 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-sm border-0 shadow-neumorphic-lg">
                         <SelectItem value="10">10条</SelectItem>
                         <SelectItem value="20">20条</SelectItem>
                         <SelectItem value="50">50条</SelectItem>
@@ -669,26 +689,27 @@ export default function DeviceDetailPage() {
               </div>
 
               {/* 批量操作和统计信息 */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                  <div className="flex items-center space-x-3">
                     <Checkbox
                       id="select-all"
                       checked={selectedAddresses.size === filteredAndSortedAddresses.length && filteredAndSortedAddresses.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
-                    <label htmlFor="select-all" className="text-sm font-medium">
+                    <label htmlFor="select-all" className="text-body font-medium">
                       全选当前页 ({selectedAddresses.size}/{filteredAndSortedAddresses.length})
                     </label>
                   </div>
                   {selectedAddresses.size > 0 && (
-                    <Badge variant="secondary">
-                      已选择 {selectedAddresses.size} 个地址用于图表显示
+                    <Badge variant="secondary" className="shadow-neumorphic-sm w-fit">
+                      已选择 {selectedAddresses.size} 个地址
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>显示 {Math.min((currentPage - 1) * pageSize + 1, filteredAndSortedAddresses.length)}-{Math.min(currentPage * pageSize, filteredAndSortedAddresses.length)} 条，共 {filteredAndSortedAddresses.length} 条</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-body text-muted-foreground">
+                  <span>显示 {Math.min((currentPage - 1) * pageSize + 1, filteredAndSortedAddresses.length)}-{Math.min(currentPage * pageSize, filteredAndSortedAddresses.length)} 条</span>
+                  <span>共 {filteredAndSortedAddresses.length} 条</span>
                   {processedAddresses.length !== filteredAndSortedAddresses.length && (
                     <span className="text-blue-600">（已筛选，总共 {processedAddresses.length} 条）</span>
                   )}
@@ -699,144 +720,195 @@ export default function DeviceDetailPage() {
 
           {/* 数据显示区域 */}
           {dataError ? (
-            <Card>
+            <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
               <CardContent className="pt-6">
-                <div className="text-center py-8">
-                  <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
-                  <p className="text-red-600 mb-4">获取实时数据失败</p>
-                  <Button variant="outline" onClick={handleRefresh}>
+                <div className="text-center py-16">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 shadow-neumorphic-sm inline-block mb-6">
+                    <AlertTriangle className="h-16 w-16 text-red-600" />
+                  </div>
+                  <h3 className="text-h3 text-foreground mb-3">获取实时数据失败</h3>
+                  <p className="text-body text-muted-foreground mb-6">
+                    无法连接到设备或获取数据，请检查设备状态和网络连接
+                  </p>
+                  <Button variant="default" size="lg" onClick={handleRefresh} className="shadow-neumorphic hover:shadow-neumorphic-lg">
+                    <RefreshCw className="h-5 w-5 mr-2" />
                     重试
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : filteredAndSortedAddresses.length === 0 ? (
-            <Card>
+            <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
               <CardContent className="pt-6">
-                <div className="text-center py-8">
-                  <Database className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
+                <div className="text-center py-16">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm inline-block mb-6">
+                    <Database className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-h3 text-foreground mb-3">
                     {processedAddresses.length === 0 ? '该设备没有配置采集地址' : '没有找到匹配的地址'}
+                  </h3>
+                  <p className="text-body text-muted-foreground">
+                    {processedAddresses.length === 0
+                      ? '请在设备配置中添加采集地址以开始监控数据'
+                      : '请尝试调整搜索条件或筛选器以显示更多结果'
+                    }
                   </p>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <>
-              {/* 数据表格/网格 - 优化版本 */}
-              <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
+              {/* 数据表格/网格 - 扁平拟物风格 */}
+              <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
                 <CardContent className="p-0">
                   {viewMode === 'table' ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={selectedAddresses.size === paginatedAddresses.length && paginatedAddresses.length > 0}
-                              onCheckedChange={() => {
-                                if (selectedAddresses.size === paginatedAddresses.length) {
-                                  // 取消选择当前页所有项
-                                  const newSelected = new Set(selectedAddresses)
-                                  paginatedAddresses.forEach((addr: any) => newSelected.delete(addr.address))
-                                  setSelectedAddresses(newSelected)
-                                } else {
-                                  // 选择当前页所有项
-                                  const newSelected = new Set(selectedAddresses)
-                                  paginatedAddresses.forEach((addr: any) => newSelected.add(addr.address))
-                                  setSelectedAddresses(newSelected)
-                                }
-                              }}
-                            />
-                          </TableHead>
-                          <TableHead>地址</TableHead>
-                          {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && <TableHead>站号</TableHead>}
-                          <TableHead>名称</TableHead>
-                          <TableHead>当前值</TableHead>
-                          <TableHead>类型</TableHead>
-                          <TableHead>单位</TableHead>
-                          <TableHead>趋势</TableHead>
-                          <TableHead>状态</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    <>
+                      {/* 桌面端表格视图 */}
+                      <div className="hidden lg:block rounded-2xl overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-14 text-h4 font-semibold">选择</TableHead>
+                              <TableHead className="text-h4 font-semibold">地址</TableHead>
+                              {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && <TableHead className="text-h4 font-semibold">站号</TableHead>}
+                              <TableHead className="text-h4 font-semibold">名称</TableHead>
+                              <TableHead className="text-h4 font-semibold">当前值</TableHead>
+                              <TableHead className="text-h4 font-semibold">类型</TableHead>
+                              <TableHead className="text-h4 font-semibold">单位</TableHead>
+                              <TableHead className="text-h4 font-semibold">趋势</TableHead>
+                              <TableHead className="text-h4 font-semibold">状态</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedAddresses.map((addr: any) => (
+                              <TableRow key={addr.address} className="group hover:bg-muted/30 transition-all duration-300">
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedAddresses.has(addr.address)}
+                                    onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-mono text-body">{addr.originalAddress || addr.address}</TableCell>
+                                {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
+                                  <TableCell className="text-body">{addr.stationId || 1}</TableCell>
+                                )}
+                                <TableCell className="font-semibold text-body">{addr.name || '-'}</TableCell>
+                                <TableCell>
+                                  <DataValueDisplay value={addr.currentValue} type={addr.type} />
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-body-sm shadow-neumorphic-sm">
+                                    {addr.type || 'unknown'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-body text-muted-foreground">
+                                  {addr.unit || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-body-sm shadow-neumorphic-sm">
+                                    {addr.hasData ? '有数据' : '无数据'}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* 移动端卡片视图 */}
+                      <div className="lg:hidden p-6 space-y-4">
                         {paginatedAddresses.map((addr: any) => (
-                          <TableRow key={addr.address}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedAddresses.has(addr.address)}
-                                onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">{addr.originalAddress || addr.address}</TableCell>
-                            {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
-                              <TableCell className="text-sm">{addr.stationId || 1}</TableCell>
-                            )}
-                            <TableCell className="font-medium">{addr.name || '-'}</TableCell>
-                            <TableCell>
-                              <DataValueDisplay value={addr.currentValue} type={addr.type} />
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {addr.type || 'unknown'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {addr.unit || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-xs">
-                                {addr.hasData ? '有数据' : '无数据'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
+                          <Card key={addr.address} className="border-0 shadow-neumorphic-sm hover:shadow-neumorphic hover:-translate-y-1 transition-all duration-300">
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <Checkbox
+                                    checked={selectedAddresses.has(addr.address)}
+                                    onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
+                                  />
+                                  <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-body-sm shadow-neumorphic-sm">
+                                    {addr.hasData ? '有数据' : '无数据'}
+                                  </Badge>
+                                </div>
+                                <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
+                              </div>
+                              <CardTitle className="text-body font-mono">{addr.originalAddress || addr.address}</CardTitle>
+                              {addr.name && (
+                                <CardDescription className="text-body font-semibold text-foreground">{addr.name}</CardDescription>
+                              )}
+                              {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
+                                <CardDescription className="text-body-sm">
+                                  站号: {addr.stationId || 1}
+                                </CardDescription>
+                              )}
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-body-sm text-muted-foreground">当前值</span>
+                                <DataValueDisplay value={addr.currentValue} type={addr.type} />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-body-sm text-muted-foreground">类型</span>
+                                <Badge variant="outline" className="text-body-sm shadow-neumorphic-sm">
+                                  {addr.type || 'unknown'}
+                                </Badge>
+                              </div>
+                              {addr.unit && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-body-sm text-muted-foreground">单位</span>
+                                  <span className="text-body-sm">{addr.unit}</span>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   ) : viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                       {paginatedAddresses.map((addr: any) => (
-                        <Card key={addr.address} className="relative">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                        <Card key={addr.address} className="border-0 shadow-neumorphic-sm hover:shadow-neumorphic hover:-translate-y-1 transition-all duration-300">
+                          <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
                                 <Checkbox
                                   checked={selectedAddresses.has(addr.address)}
                                   onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
                                 />
-                                <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-xs">
+                                <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-body-sm shadow-neumorphic-sm">
                                   {addr.hasData ? '有数据' : '无数据'}
                                 </Badge>
                               </div>
                               <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
                             </div>
-                            <CardTitle className="text-sm font-mono">{addr.originalAddress || addr.address}</CardTitle>
+                            <CardTitle className="text-body font-mono">{addr.originalAddress || addr.address}</CardTitle>
                             {addr.name && (
-                              <CardDescription className="text-sm font-medium">{addr.name}</CardDescription>
+                              <CardDescription className="text-body font-semibold text-foreground">{addr.name}</CardDescription>
                             )}
                             {device?.plc_type && device.plc_type.toLowerCase().includes('rtu') && device.plc_type.toLowerCase().includes('tcp') && (
-                              <CardDescription className="text-xs">
+                              <CardDescription className="text-body-sm">
                                 站号: {addr.stationId || 1}
                               </CardDescription>
                             )}
                           </CardHeader>
-                          <CardContent className="space-y-2">
+                          <CardContent className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">当前值</span>
+                              <span className="text-body-sm text-muted-foreground">当前值</span>
                               <DataValueDisplay value={addr.currentValue} type={addr.type} />
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">类型</span>
-                              <Badge variant="outline" className="text-xs">
+                              <span className="text-body-sm text-muted-foreground">类型</span>
+                              <Badge variant="outline" className="text-body-sm shadow-neumorphic-sm">
                                 {addr.type || 'unknown'}
                               </Badge>
                             </div>
                             {addr.unit && (
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">单位</span>
-                                <span className="text-sm">{addr.unit}</span>
+                                <span className="text-body-sm text-muted-foreground">单位</span>
+                                <span className="text-body-sm">{addr.unit}</span>
                               </div>
                             )}
                           </CardContent>
@@ -844,46 +916,46 @@ export default function DeviceDetailPage() {
                       ))}
                     </div>
                   ) : (
-                    /* 紧凑视图 - 最大化空间利用率 */
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+                    /* 紧凑视图 - 扁平拟物风格 */
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                         {paginatedAddresses.map((addr: any) => (
-                          <div key={addr.address} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
+                          <div key={addr.address} className="border-0 rounded-2xl p-4 bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm shadow-neumorphic-sm hover:shadow-neumorphic hover:-translate-y-1 transition-all duration-300">
+                            <div className="flex items-center justify-between mb-3">
                               <Checkbox
                                 checked={selectedAddresses.has(addr.address)}
                                 onCheckedChange={(checked) => handleAddressSelection(addr.address, checked as boolean)}
-                                className="h-4 w-4"
+                                className="h-5 w-5"
                               />
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                 <DataTrendIcon current={addr.currentValue} previous={addr.previousValue} />
-                                <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-xs px-1 py-0">
+                                <Badge variant={addr.hasData ? 'default' : 'secondary'} className="text-body-sm px-2 py-0 shadow-neumorphic-sm">
                                   {addr.hasData ? '✓' : '✗'}
                                 </Badge>
                               </div>
                             </div>
-                            <div className="space-y-1">
-                              <div className="font-mono text-xs text-muted-foreground truncate" title={addr.address}>
+                            <div className="space-y-2">
+                              <div className="font-mono text-body-sm text-muted-foreground truncate" title={addr.address}>
                                 {addr.address}
                               </div>
                               {addr.name && (
-                                <div className="font-medium text-sm truncate" title={addr.name}>
+                                <div className="font-semibold text-body truncate" title={addr.name}>
                                   {addr.name}
                                 </div>
                               )}
                               {device?.plc_type === 'modbus_rtu_over_tcp' && (
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-body-sm text-muted-foreground">
                                   站号: {addr.stationId || 1}
                                 </div>
                               )}
                               <div className="flex items-center justify-between">
                                 <DataValueDisplay value={addr.currentValue} type={addr.type} />
-                                <Badge variant="outline" className="text-xs px-1 py-0">
+                                <Badge variant="outline" className="text-body-sm px-2 py-0 shadow-neumorphic-sm">
                                   {addr.type || '?'}
                                 </Badge>
                               </div>
                               {addr.unit && (
-                                <div className="text-xs text-muted-foreground truncate">
+                                <div className="text-body-sm text-muted-foreground truncate">
                                   {addr.unit}
                                 </div>
                               )}
@@ -896,57 +968,59 @@ export default function DeviceDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* 分页控件 - 优化版本 */}
+              {/* 分页控件 - 扁平拟物风格 */}
               {totalPages > 1 && (
-                <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                          disabled={currentPage === 1}
-                          className="border-gray-200 hover:bg-gray-50"
-                        >
-                          上一页
-                        </Button>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum
-                            if (totalPages <= 5) {
-                              pageNum = i + 1
-                            } else if (currentPage <= 3) {
-                              pageNum = i + 1
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i
-                            } else {
-                              pageNum = currentPage - 2 + i
-                            }
-                            return (
-                              <Button
-                                key={pageNum}
-                                variant={currentPage === pageNum ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setCurrentPage(pageNum)}
-                                className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-blue-500 hover:bg-blue-600' : 'border-gray-200 hover:bg-gray-50'}`}
-                              >
-                                {pageNum}
-                              </Button>
-                            )
-                          })}
+                <Card className="border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
+                  <CardContent className="py-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                      <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="h-12 px-4 sm:px-6 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
+                          >
+                            上一页
+                          </Button>
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let pageNum
+                              if (totalPages <= 5) {
+                                pageNum = i + 1
+                              } else if (currentPage <= 3) {
+                                pageNum = i + 1
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i
+                              } else {
+                                pageNum = currentPage - 2 + i
+                              }
+                              return (
+                                <Button
+                                  key={pageNum}
+                                  variant={currentPage === pageNum ? 'default' : 'outline'}
+                                  size="lg"
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className={`w-10 h-10 sm:w-12 sm:h-12 p-0 ${currentPage === pageNum ? 'shadow-neumorphic hover:shadow-neumorphic-lg' : 'bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300'}`}
+                                >
+                                  {pageNum}
+                                </Button>
+                              )
+                            })}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-12 px-4 sm:px-6 bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-0 shadow-neumorphic-sm hover:shadow-neumorphic focus:shadow-neumorphic-lg transition-all duration-300"
+                          >
+                            下一页
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                          disabled={currentPage === totalPages}
-                          className="border-gray-200 hover:bg-gray-50"
-                        >
-                          下一页
-                        </Button>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-body text-muted-foreground text-center sm:text-left">
                         第 {currentPage} 页，共 {totalPages} 页
                       </div>
                     </div>

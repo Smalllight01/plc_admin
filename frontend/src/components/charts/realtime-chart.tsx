@@ -186,71 +186,96 @@ export function RealtimeChart({
   })
   
   return (
-    <Card className="w-full h-auto min-h-fit">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          实时数据 {deviceName && `- ${deviceName}`}
+    <Card className="w-full h-auto min-h-fit border-0 shadow-neumorphic hover:shadow-neumorphic-lg transition-all duration-300">
+      <CardHeader className="pb-6">
+        <CardTitle className="flex items-center gap-3 text-xl">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+            <TrendingUp className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <span className="text-h2 gradient-text">实时数据趋势</span>
+            {deviceName && (
+              <p className="text-body text-muted-foreground mt-1">设备: {deviceName}</p>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 地址选择器 */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Activity className="h-4 w-4" />
+      <CardContent className="space-y-6">
+        {/* 地址选择器 - 扁平拟物风格 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-body font-semibold">
+            <div className="p-2 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+              <Activity className="h-4 w-4 text-blue-600" />
+            </div>
             选择显示地址:
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             {availableAddresses.map(addr => {
               const isSelected = selectedAddresses.has(addr.address)
               const config = chartConfig[addr.address]
-              
+
               return (
-                <div key={addr.address} className="flex items-center space-x-2">
+                <div
+                  key={addr.address}
+                  className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all duration-300 ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic hover:shadow-neumorphic-lg border border-blue-200'
+                      : 'bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm hover:shadow-neumorphic border border-transparent'
+                  }`}
+                  onClick={() => handleAddressToggle(addr.address)}
+                >
                   <Checkbox
                     id={addr.address}
                     checked={isSelected}
                     onCheckedChange={() => handleAddressToggle(addr.address)}
+                    className="h-5 w-5"
                   />
                   <label
                     htmlFor={addr.address}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                    className="text-body font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-3"
                   >
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="w-4 h-4 rounded-full shadow-neumorphic-sm"
                       style={{ backgroundColor: config?.color }}
                     />
-                    <span>{addr.name || addr.address}</span>
-                    {addr.unit && (
-                      <Badge variant="secondary" className="text-xs">
-                        {addr.unit}
-                      </Badge>
-                    )}
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{addr.name || addr.address}</span>
+                      {addr.unit && (
+                        <Badge variant="outline" className="text-body-sm shadow-neumorphic-sm mt-1">
+                          {addr.unit}
+                        </Badge>
+                      )}
+                    </div>
                   </label>
                 </div>
               )
             })}
           </div>
         </div>
-        
-        {/* 图表 */}
-        <div className="w-full">
+
+        {/* 图表容器 - 扁平拟物风格 */}
+        <div className="w-full rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm shadow-neumorphic-sm p-6">
           {chartData.length === 0 ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <div className="text-center text-muted-foreground">
-                <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>等待实时数据...</p>
+            <div className="flex flex-col items-center justify-center min-h-[300px]">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm mb-4">
+                <Activity className="h-12 w-12 text-muted-foreground" />
               </div>
+              <h3 className="text-h3 text-foreground mb-2">等待实时数据</h3>
+              <p className="text-body text-muted-foreground">设备正在采集数据中...</p>
             </div>
           ) : selectedAddresses.size === 0 ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <div className="text-center text-muted-foreground">
-                <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>请选择要显示的地址</p>
+            <div className="flex flex-col items-center justify-center min-h-[300px]">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm mb-4">
+                <TrendingUp className="h-12 w-12 text-muted-foreground" />
               </div>
+              <h3 className="text-h3 text-foreground mb-2">请选择地址</h3>
+              <p className="text-body text-muted-foreground">请选择要显示的地址以查看数据趋势</p>
             </div>
           ) : (
-            <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+            <ChartContainer
+              config={chartConfig}
+              className="min-h-[300px] w-full rounded-2xl"
+            >
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   accessibilityLayer
@@ -262,7 +287,12 @@ export function RealtimeChart({
                     bottom: 40,
                   }}
                 >
-                  <CartesianGrid vertical={false} />
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="#f0f0f0"
+                    strokeDasharray="3 3"
+                    opacity={0.7}
+                  />
                   <XAxis
                     dataKey="time"
                     tickLine={false}
@@ -271,12 +301,14 @@ export function RealtimeChart({
                     minTickGap={50}
                     interval="preserveStartEnd"
                     tickFormatter={(value) => value.slice(0, 8)}
+                    tick={{ fontSize: 11, fill: '#666' }}
                   />
                   <YAxis
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
                     tickFormatter={(value) => `${value}`}
+                    tick={{ fontSize: 11, fill: '#666' }}
                   />
                   <ChartTooltip
                     cursor={false}
@@ -296,6 +328,9 @@ export function RealtimeChart({
                         connectNulls={false}
                         activeDot={{
                           r: 6,
+                          stroke: config?.color,
+                          strokeWidth: 2,
+                          fill: '#fff',
                         }}
                       />
                     )
@@ -305,15 +340,30 @@ export function RealtimeChart({
             </ChartContainer>
           )}
         </div>
-        
-        {/* 统计信息 */}
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>数据点: {chartData.length}/{maxDataPoints}</span>
-          <span>选中地址: {selectedAddresses.size}/{availableAddresses.length}</span>
+
+        {/* 统计信息 - 扁平拟物风格 */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-neumorphic-sm">
+          <div className="flex items-center gap-4 text-body-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-neumorphic-sm">
+                <Activity className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <span>数据点: <span className="font-semibold text-foreground">{chartData.length}/{maxDataPoints}</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 shadow-neumorphic-sm">
+                <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+              </div>
+              <span>选中地址: <span className="font-semibold text-foreground">{selectedAddresses.size}/{availableAddresses.length}</span></span>
+            </div>
+          </div>
           {chartData.length > 0 && (
-            <span>
-              最后更新: {formatDateTime(chartData[chartData.length - 1]?.timestamp)}
-            </span>
+            <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
+              <div className="p-1.5 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 shadow-neumorphic-sm">
+                <Activity className="h-3.5 w-3.5 text-orange-600" />
+              </div>
+              <span>最后更新: <span className="font-semibold text-foreground">{formatDateTime(chartData[chartData.length - 1]?.timestamp)}</span></span>
+            </div>
           )}
         </div>
       </CardContent>
